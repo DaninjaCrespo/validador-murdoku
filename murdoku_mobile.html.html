@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Murdoku - Painel de Investigação: Caso Jack</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-page: #0b1120;
+            --panel-bg: rgba(30, 41, 59, 0.85);
+            --panel-border: #334155;
+            
+            --dark: #2a3342;    
+            --pink: #d977a6;    
+            --green: #4ade80;   
+            --purple: #8b5cf6;  
+            --orange: #f97316;  
+            --blue: #3b82f6;    
+            --red: #ef4444;     
+            
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+            --accent: #38bdf8;
+            --highlight: #facc15;
+        }
+
+        body {
+            background-color: var(--bg-page);
+            background-image: radial-gradient(circle at top right, #1e293b 0%, transparent 40%), 
+                              radial-gradient(circle at bottom left, #0f172a 0%, transparent 40%);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; 
+        }
+
+        .layout-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 1600px;
+            height: 98vh; 
+            gap: 12px; 
+            padding: 10px 15px;
+            box-sizing: border-box;
+        }
+
+        .board-title {
+            text-align: center;
+            margin: 0;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: var(--text-muted);
+            font-weight: 800;
+        }
+        .board-title span { color: var(--accent); }
+
+        /* HEADER: PERSONAGENS */
+        .top-bar {
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 10px 15px; 
+            box-shadow: 0 6px 12px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .top-bar h2 {
+            margin: 0 0 8px 0; 
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--highlight);
+        }
+        .character-row {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap; 
+            gap: 10px; 
+            justify-content: center;
+            width: 100%;
+        }
+        .char-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #0f172a;
+            border: 2px solid #334155;
+            padding: 6px 12px; 
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-main);
+            font-weight: 800;
+            font-size: 13px; 
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .char-btn:hover { background: #1e293b; transform: translateY(-2px); }
+        .char-btn.selected { 
+            border-color: var(--highlight); 
+            background: #1e293b;
+            box-shadow: 0 0 10px rgba(250, 204, 21, 0.4);
+        }
+        .char-icon { font-size: 20px; } 
+        .char-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.9);
+            box-shadow: 0 0 5px rgba(0,0,0,0.8);
+        }
+
+        /* WORKSPACE */
+        .workspace {
+            display: flex;
+            flex-direction: row;
+            gap: 15px; 
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* PAINÉIS LATERAIS */
+        .side-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 15px; 
+            flex-shrink: 0;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .left-panel { width: 250px; }
+        .right-panel { width: 460px; }
+
+        .side-panel-content {
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-right: 5px;
+        }
+        .side-panel h2 { 
+            margin-top: 0; 
+            font-size: 15px; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+            color: var(--highlight); 
+            border-bottom: 1px solid var(--panel-border); 
+            padding-bottom: 10px; 
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* LEGENDA */
+        .legend-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 4px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            line-height: 1.1;
+        }
+        .legend-item span.icon { font-size: 20px; } 
+        .legend-item strong { color: var(--accent); font-size: 11px;}
+
+        /* SISTEMA DE ABAS PRINCIPAIS */
+        .tabs-header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--panel-border);
+            padding-bottom: 10px;
+        }
+        .tab-btn {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: var(--text-muted);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .tab-btn:hover { background: #1e293b; color: white;}
+        .tab-btn.active {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+        }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* SISTEMA DE SUB-ABAS */
+        .sub-tabs-header {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 8px;
+            margin-bottom: 15px;
+            background: #0f172a;
+            padding: 6px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+        .sub-tab-btn {
+            flex: 1; 
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            padding: 8px 4px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .sub-tab-btn:hover { color: white; background: rgba(255,255,255,0.05); }
+        .sub-tab-btn.active {
+            background: #1e293b;
+            color: var(--highlight);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            border: 1px solid #475569;
+        }
+        
+        .sub-tab-content { display: none; animation: fadeIn 0.3s; }
+        .sub-tab-content.active { display: block; }
+
+        /* ESTILO DO TÍTULO COM BOTÃO DE PLAY */
+        .char-name-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--highlight);
+            font-size: 14px;
+            margin: 0 0 12px 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 800;
+        }
+        .replay-btn {
+            background: #10b981;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            color: white;
+            font-size: 14px;
+            transition: 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+        }
+        .replay-btn:hover {
+            background: #059669;
+            transform: scale(1.1);
+        }
+
+        /* Estilo Relatório Investigativo */
+        .quote-large { 
+            font-family: 'Inter', sans-serif;
+            font-size: 16px; 
+            line-height: 1.6; 
+            color: #f8fafc; 
+            background: rgba(0,0,0,0.4); 
+            padding: 20px 25px; 
+            border-left: 5px solid var(--accent); 
+            border-radius: 0 12px 12px 0;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+            margin: 0;
+        }
+
+        /* MENSAGEM DE ARQUIVO BLOQUEADO */
+        .locked-msg {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: rgba(15, 23, 42, 0.7);
+            border: 2px dashed #475569;
+            border-radius: 12px;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            animation: fadeIn 0.3s;
+        }
+        .locked-msg .lock-icon {
+            font-size: 45px;
+            margin-bottom: 15px;
+            filter: grayscale(1);
+            opacity: 0.7;
+        }
+        .locked-msg h3 {
+            color: #f87171;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 16px;
+        }
+        .locked-msg p {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        /* CENTRO: TABULEIRO */
+        .board-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: 22px repeat(9, 62px); 
+            grid-template-rows: 22px repeat(9, 62px);
+            gap: 4px;
+            background: #0b1120;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.9);
+            border: 2px solid var(--panel-border);
+        }
+
+        .header-cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 11px;
+            font-weight: 900;
+            color: #64748b;
+        }
+
+        .cell {
+            position: relative;
+            background-color: var(--dark); 
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            overflow: hidden;
+            transition: filter 0.2s;
+            box-shadow: inset 2px 2px 4px rgba(255,255,255,0.15), inset -2px -2px 4px rgba(0,0,0,0.5);
+        }
+        .cell:hover:not(.blocked) { filter: brightness(1.2); }
+
+        .bg-pink { background-color: var(--pink); background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.1) 0, rgba(0,0,0,0.1) 2px, transparent 2px, transparent 6px); }
+        .bg-green { background-color: var(--green); background-image: radial-gradient(rgba(0,0,0,0.15) 20%, transparent 20%); background-size: 10px 10px; }
+        .bg-purple { background-color: var(--purple); background-image: linear-gradient(0deg, rgba(0,0,0,0.1) 50%, transparent 50%), linear-gradient(90deg, rgba(0,0,0,0.1) 50%, transparent 50%); background-size: 12px 12px; }
+        .bg-orange { background-color: var(--orange); background-image: repeating-linear-gradient(90deg, rgba(0,0,0,0.1) 0, rgba(0,0,0,0.1) 2px, transparent 2px, transparent 8px); }
+        .bg-blue { background-color: var(--blue); background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0, rgba(0,0,0,0.1) 2px, transparent 2px, transparent 8px); }
+        .bg-dark { background-color: var(--dark); background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 5px); border: 1px dashed #334155; }
+        .bg-red { background-color: var(--red); }
+
+        .cell.blocked { cursor: not-allowed; }
+        .cell.blocked::before {
+            content: ''; position: absolute; top:0; left:0; right:0; bottom:0;
+            background: rgba(0,0,0,0.4); z-index: 1;
+        }
+
+        .location-token {
+            width: 56px; 
+            height: 44px; 
+            background: linear-gradient(145deg, #2a3a52, #1e293b); 
+            border: 2px solid #94a3b8;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #ffffff;
+            z-index: 3;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.7);
+            text-align: center;
+            padding-top: 2px;
+        }
+        .loc-icon { font-size: 18px; line-height: 1; margin-bottom: 2px;} 
+        .loc-text { font-size: 12px; font-weight: 900; line-height: 1; letter-spacing: 0.5px; color: #cbd5e1;}
+
+        .tc-container, .x-container {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; justify-content: center; align-items: center; pointer-events: none; 
+        }
+        .tc-container { z-index: 10; }
+        .x-container { z-index: 5; }
+
+        .character-token {
+            width: 42px;
+            height: 42px;
+            background: #0f172a;
+            border: 3px solid white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 900;
+            font-size: 15px;
+            color: white;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.9), inset 0 2px 4px rgba(255,255,255,0.2);
+            pointer-events: auto; 
+        }
+
+        .x-mark {
+            position: absolute;
+            font-family: 'Inter', sans-serif;
+            font-weight: 900;
+            font-size: 55px;
+            opacity: 1;
+            color: #ffffff; 
+            text-shadow: 0 0 4px var(--x-color), 0 0 10px var(--x-color), 0 0 15px black, 0 4px 6px black;
+        }
+
+        /* MODAL DE VITÓRIA */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center;
+            z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+        }
+        .modal-overlay.show { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            background: #1e293b; border: 3px solid #facc15; border-radius: 12px; padding: 40px; text-align: center;
+            max-width: 450px; box-shadow: 0 0 40px rgba(250, 204, 21, 0.4); transform: scale(0.9); transition: transform 0.4s ease;
+        }
+        .modal-overlay.show .modal-content { transform: scale(1); }
+        .modal-content h2 { color: #facc15; font-size: 28px; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; }
+        .modal-content p { color: #f8fafc; font-size: 16px; line-height: 1.5; margin-bottom: 30px; }
+        .modal-btn {
+            background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 8px;
+            font-weight: 800; font-size: 16px; cursor: pointer; transition: background 0.2s; text-transform: uppercase;
+        }
+        .modal-btn:hover { background: #059669; }
+
+        /* =========================================
+           ✨ MÁGICA DO MOBILE (DESIGN RESPONSIVO) ✨ 
+           ========================================= */
+        @media (max-width: 950px) {
+            body { 
+                height: auto; 
+                overflow-y: auto; /* Libera o scroll no celular */
+                padding: 10px 0 30px 0; 
+            }
+            .layout-container { 
+                height: auto; 
+                padding: 5px 10px;
+            }
+            .workspace { 
+                flex-direction: column; /* Empilha tudo verticalmente */
+                align-items: center; 
+                gap: 20px;
+            }
+            
+            /* Reordenando a ordem de exibição no celular */
+            .board-container { order: 1; width: 100%; padding: 0; }
+            .left-panel { order: 2; width: 100%; max-width: 100%; } /* Legenda embaixo do tabuleiro */
+            .right-panel { order: 3; width: 100%; max-width: 100%; } /* História por último */
+
+            /* Ajustes nos botões de cima para caberem bem */
+            .char-btn { padding: 8px 10px; font-size: 12px; }
+            .char-icon { font-size: 16px; }
+
+            /* Ajuste Cirúrgico do Tabuleiro (Tudo redimensionado para não sair da tela) */
+            .board {
+                grid-template-columns: 18px repeat(9, 36px); 
+                grid-template-rows: 18px repeat(9, 36px);
+                gap: 2px;
+                padding: 8px;
+            }
+            .header-cell { font-size: 9px; }
+            .location-token { width: 34px; height: 34px; padding-top: 1px; }
+            .loc-icon { font-size: 14px; margin-bottom: 0px; }
+            .loc-text { font-size: 7px; letter-spacing: 0px; }
+            .character-token { width: 28px; height: 28px; font-size: 11px; border-width: 2px; }
+            .x-mark { font-size: 30px; }
+            
+            /* Melhorias de leitura da história no celular */
+            .quote-large { font-size: 15px; padding: 15px; line-height: 1.5; }
+            .sub-tab-btn { font-size: 11px; padding: 8px 2px; }
+        }
+
+        /* Ajuste para telas super pequenas (iPhone SE, etc) */
+        @media (max-width: 380px) {
+            .board {
+                grid-template-columns: 15px repeat(9, 32px); 
+                grid-template-rows: 15px repeat(9, 32px);
+            }
+            .location-token { width: 30px; height: 30px; }
+            .loc-icon { font-size: 12px; }
+            .loc-text { font-size: 6px; }
+            .character-token { width: 24px; height: 24px; font-size: 10px; }
+            .x-mark { font-size: 26px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="layout-container">
+        <p class="board-title">🔍 Mapa de Investigação do Detetive <span>[CONFIDENCIAL]</span></p>
+        
+        <!-- HEADER: PERSONAGENS -->
+        <div class="top-bar">
+            <h2>Selecionar Suspeito (Clique na Ficha e aponte no Mapa)</h2>
+            <div id="character-list" class="character-row"></div>
+        </div>
+
+        <!-- ÁREA DE TRABALHO -->
+        <div class="workspace">
+            
+            <!-- PAINEL ESQUERDO: LEGENDA -->
+            <div class="side-panel left-panel">
+                <h2>🗺️ Locais (Bloqueados)</h2>
+                <div class="side-panel-content">
+                    <div class="legend-grid">
+                        <div class="legend-item"><span class="icon">🚃</span> <div><strong>VGBND</strong><br>Vagão Aband.</div></div>
+                        <div class="legend-item"><span class="icon">⚒️</span> <div><strong>PTFRR</strong><br>Ferreiro</div></div>
+                        <div class="legend-item"><span class="icon">🎭</span> <div><strong>LIRA</strong><br>Clube Lira</div></div>
+                        <div class="legend-item"><span class="icon">☕</span> <div><strong>LOCO</strong><br>LocoBreak</div></div>
+                        <div class="legend-item"><span class="icon">🍻</span> <div><strong>LCBR</strong><br>Bar</div></div>
+                        <div class="legend-item"><span class="icon">⚽</span> <div><strong>CMFT</strong><br>Campo Futebol</div></div>
+                        <div class="legend-item"><span class="icon">🏡</span> <div><strong>FOX</strong><br>Casa Fox</div></div>
+                        <div class="legend-item"><span class="icon">🎻</span> <div><strong>SCLYRA</strong><br>Sociedade</div></div>
+                        <div class="legend-item"><span class="icon">📦</span> <div><strong>PDMDZ</strong><br>Armazém</div></div>
+                        <div class="legend-item"><span class="icon">🥩</span> <div><strong>MRCD</strong><br>Mercado</div></div>
+                        <div class="legend-item"><span class="icon">⏱️</span> <div><strong>RLG</strong><br>Relógio</div></div>
+                        <div class="legend-item"><span class="icon">🏰</span> <div><strong>CASTL</strong><br>Castelinho</div></div>
+                        <div class="legend-item"><span class="icon">⛪</span> <div><strong>IGJ</strong><br>Capela</div></div>
+                        <div class="legend-item"><span class="icon">🌉</span> <div><strong>PNT 1/2</strong><br>Pontes</div></div>
+                        <div class="legend-item"><span class="icon">🧱</span> <div><strong>RSAT</strong><br>Ruínas</div></div>
+                        <div class="legend-item"><span class="icon">🥖</span> <div><strong>LGPD</strong><br>Largo Padeiros</div></div>
+                        <div class="legend-item"><span class="icon">⚕️</span> <div><strong>CSMQ</strong><br>C. Médico</div></div>
+                        <div class="legend-item"><span class="icon">🪦</span> <div><strong>CMTR</strong><br>Cemitério</div></div>
+                        <div class="legend-item"><span class="icon">🏥</span> <div><strong>HSPT</strong><br>Hospital</div></div>
+                        <div class="legend-item"><span class="icon">⚙️</span> <div><strong>FNC</strong><br>Funicular Base</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CENTRO: TABULEIRO -->
+            <div class="board-container">
+                <div class="board" id="game-board">
+                    <!-- Gerado via JS -->
+                </div>
+            </div>
+
+            <!-- PAINEL DIREITO: HISTÓRIA -->
+            <div class="side-panel right-panel">
+                <h2>📝 Roteiro de Evidências</h2>
+                
+                <div class="tabs-header">
+                    <button class="tab-btn active" onclick="showTab('tab-cam1')">Passo 1</button>
+                    <button class="tab-btn" onclick="showTab('tab-cam2')">Passo 2</button>
+                    <button class="tab-btn" onclick="showTab('tab-cam3')">Passo 3</button>
+                    <button class="tab-btn" onclick="showTab('tab-vitima')">Vítima</button>
+                    <button class="tab-btn" onclick="showTab('tab-assassino')">Final</button>
+                </div>
+
+                <div class="side-panel-content">
+                    
+                    <!-- PASSO 1 -->
+                    <div id="tab-cam1" class="tab-content active">
+                        <div class="sub-tabs-header">
+                            <button class="sub-tab-btn active" onclick="showSubTab(event, 'cam1-s6', 'MADAME')">🍷 S6 (Madame)</button>
+                            <button class="sub-tab-btn" onclick="showSubTab(event, 'cam1-s1', 'MEDICO')">🩺 S1 (Médico)</button>
+                            <button class="sub-tab-btn" onclick="showSubTab(event, 'cam1-s2', 'COVEIRO')">⛏️ S2 (Coveiro)</button>
+                        </div>
+                        
+                        <div id="cam1-s6" class="sub-tab-content active">
+                            <h4 class="char-name-title">🍷 S6 (Madame) <button class="replay-btn" onclick="playAudio('MADAME')" title="Ouvir Novamente">▶️</button></h4>
+                            <p class="quote-large">"Insolência pura. Sangue de rua não entra no meu casarão no setor lilás (Roxo). Eu tranquei todas as portas! Se quer um culpado com estômago para isso, vá interrogar o Barão (S7). Da minha varanda, olhando duas ruas para baixo, eu via perfeitamente a mansão pretensiosa dele. Ele assistiu ao massacre de camarote e não moveu um único dedo. Covarde."</p>
+                        </div>
+                        <div id="cam1-s1" class="sub-tab-content">
+                            <h4 class="char-name-title">🩺 S1 (Médico) <button class="replay-btn" onclick="playAudio('MEDICO')" title="Ouvir Novamente">▶️</button></h4>
+                            <p class="quote-large">"Um corte limpo no pescoço não faz de mim um assassino, detetive. Se eu quisesse matar alguém, não deixaria vestígios. Antes do corpo esfriar eu já estava trancado na Ala Médica (Azul). O meu posto fica a três ruas de distância, colina abaixo do Castelinho daquele Barão prepotente (S7). Eu estava sozinho cercado de cadáveres reais, não de fantasmas. O Estripador está lá fora."</p>
+                        </div>
+                        <div id="cam1-s2" class="sub-tab-content">
+                            <h4 class="char-name-title">⛏️ S2 (Coveiro) <button class="replay-btn" onclick="playAudio('COVEIRO')" title="Ouvir Novamente">▶️</button></h4>
+                            <p class="quote-large">"A corda sempre arrebenta pro lado mais fraco da vila, não é? Um corpo aparece na neblina e a culpa cai direto no coveiro. Mas eu nem desci para a vila hoje. Fiquei isolado na fronteira do Bosque (Verde). Minha cabana fica logo na rua de cima do necrotério daquele Doutor arrogante (S1). Podem me prender se quiserem, a palavra de um coveiro não vale nada pra lei... mas a morte de hoje não fui eu quem cavei."</p>
+                        </div>
+                    </div>
+
+                    <!-- PASSO 2 -->
+                    <div id="tab-cam2" class="tab-content">
+                        <div class="sub-tabs-header">
+                            <button class="sub-tab-btn active" onclick="showSubTab(event, 'cam2-s5', 'MAESTRO')">🎻 S5 (Maestro)</button>
+                            <button class="sub-tab-btn" onclick="showSubTab(event, 'cam2-s3', 'ACOGUEIRO')">🥩 S3 (Açougueiro)</button>
+                        </div>
+
+                        <div id="cam2-s5" class="sub-tab-content active">
+                            <h4 class="char-name-title">🎻 S5 (Maestro) <button class="replay-btn" onclick="playAudio('MAESTRO')" title="Ouvir Novamente">▶️</button></h4>
+                            <p class="quote-large">"Ah, o novo sabichão da vila. Sua presença está arruinando a minha acústica, detetive. Pessoas da minha classe não sujam as mãos com facas de açougue. Eu passei a noite no Bosque (Verde), inspirando-me. A parede da minha casa fica colada do lado esquerdo da varanda daquela tola da Madame (S6). Ela deve ter me ouvido tocar violino a noite toda. Vá atormentar os operários da vila, a arte não tem tempo para inquisidores."</p>
+                        </div>
+                        <div id="cam2-s3" class="sub-tab-content">
+                            <h4 class="char-name-title">🥩 S3 (Açougueiro) <button class="replay-btn" onclick="playAudio('ACOGUEIRO')" title="Ouvir Novamente">▶️</button></h4>
+                            <p class="quote-large">"Olha bem pra minha cara, detetive! Eu corto carne de boi o dia todo no Mercado (Laranja), tenho calos nas mãos e uma faca na cintura, sim! Mas eu não sou um monstro! Passei a madrugada trabalhando. Minha barraca fica logo na viela à esquerda de onde aquele botânico medroso (S4) cuida das plantas! Quer achar o assassino? Vá subir a colina e pergunte pra aristocracia que acha que é dona de vidas e mortes."</p>
+                        </div>
+                    </div>
+
+                    <!-- PASSO 3 -->
+                    <div id="tab-cam3" class="tab-content">
+                        <div class="sub-tabs-header">
+                            <button class="sub-tab-btn active" onclick="showSubTab(event, 'cam3-s7', 'BARAO')">🎩 S7 (Barão)</button>
+                            <button class="sub-tab-btn" onclick="showSubTab(event, 'cam3-s4', null)">🌿 S4 (Botânico)</button>
+                        </div>
+
+                        <div id="cam3-s7" class="sub-tab-content active">
+                            <h4 class="char-name-title">🎩 S7 (Barão) <button class="replay-btn" onclick="playAudio('BARAO')" title="Ouvir Novamente">▶️</button></h4>
+                            <p class="quote-large">"Retire-se imediatamente da minha propriedade, detetive de meia-pataca. Você deveria estar nas ruas imundas farejando a ralé, não ousando pisar nos portões do Castelinho. Eu estava seguro nos jardins da elite (Rosa). Minha mansão ocupa o quarteirão da quinta alameda com a oitava rua (Linha 5, Coluna 8). Da minha janela panorâmica, eu vi quando aquele lunático encurralou a coitada perto da Capela (IGJ). A neblina a engoliu para a Trilha Escura (Preta). Faça o seu trabalho insignificante e pare de me incomodar."</p>
+                        </div>
+                        <div id="cam3-s4" class="sub-tab-content">
+                            <!-- O Botânico ainda não tem áudio, então sem o botão por enquanto -->
+                            <h4 class="char-name-title">🌿 S4 (Botânico)</h4>
+                            <p class="quote-large">"Por favor, Detetive, o senhor tem que acreditar em mim! Eu sei que não tenho testemunhas na neblina, eu sei que parece horrível! Quando os gritos começaram, eu me joguei na lama do Bosque (Verde) e fiquei rezando! Eu estava escondido lá pela segunda rua (Linha 2)... Sabe a Casa Fox (FOX), aquelas casas geminadas antigas dos ingleses? Eu estava espremido na mesma viela que elas. Eu só fechei os olhos pra lâmina dele não me achar. Pelo amor de Deus, não me mande pra cadeia!"</p>
+                        </div>
+                    </div>
+
+                    <!-- VÍTIMA (COM BLOQUEIO) -->
+                    <div id="tab-vitima" class="tab-content">
+                        <div class="sub-tabs-header">
+                            <button class="sub-tab-btn active" style="cursor: default;">💀 A Vítima</button>
+                        </div>
+                        
+                        <div id="vitima-locked" class="locked-msg">
+                            <span class="lock-icon">🔒</span>
+                            <h3>Arquivo Confidencial</h3>
+                            <p>Deduzir e posicionar todos os <strong>7 suspeitos</strong> corretamente no tabuleiro desbloqueará a cena do crime.</p>
+                        </div>
+
+                        <div id="vitima-unlocked" class="sub-tab-content hidden">
+                            <h4 class="char-name-title">💀 A Vítima</h4>
+                            <p class="quote-large">A lógica implacável do seu tabuleiro revelou a cena do crime. O rastro leva diretamente ao beco da Trilha Escura (área Preta), no único espaço livre perfeitamente ao lado da velha Capela (IGJ). Você afasta a neblina pesada com as mãos e encontra o corpo. O terror o paralisa por um instante. É exatamente como nos relatórios de Londres de 1888. Um corte cirúrgico, limpo, impiedoso e brutal. O sangue ainda escorre quente pelas pedras de paralelepípedo da rua. Vasculhando os bolsos da vítima em busca de respostas, seus dedos encontram um objeto metálico anômalo: uma pequena engrenagem de ouro maciço, pesada demais para a época, que pulsa emitindo um calor inexplicável. Não há tempo para pensar nisso agora. O falso Jack está fugindo.</p>
+                        </div>
+                    </div>
+
+                    <!-- ASSASSINO (COM BLOQUEIO) -->
+                    <div id="tab-assassino" class="tab-content">
+                        <div class="sub-tabs-header">
+                            <button class="sub-tab-btn active" style="cursor: default;">🔪 O Assassino</button>
+                        </div>
+                        
+                        <div id="assassino-locked" class="locked-msg">
+                            <span class="lock-icon">🔒</span>
+                            <h3>O Xeque-Mate</h3>
+                            <p>O assassino só será revelado após a <strong>Vítima</strong> e todos os <strong>Suspeitos</strong> estarem exatamente em seus lugares matemáticos.</p>
+                        </div>
+
+                        <div id="assassino-unlocked" class="sub-tab-content hidden">
+                            <h4 class="char-name-title">🔪 O Assassino</h4>
+                            <p class="quote-large">A matemática não mente. Após posicionar todos os suspeitos e a vítima respeitando a regra de ouro do tabuleiro (cada um reinando sozinho em sua própria linha e coluna), o cerco se fecha. Sobra apenas um único espaço vazio disponível em todo o terreno da Trilha Escura (Preta). É lá que ele está! Você dispara pela neblina com a arma em punho e chega à base operacional do Funicular. A figura alta, vestida com a clássica capa preta e cartola, está encurralada contra as caldeiras a vapor da máquina. "Acabou, Jack!", você grita, engatilhando o revólver. O assassino se vira lentamente. Mas, por baixo da aba da cartola, não há os olhos de um louco vitoriano: há engrenagens girando em alta velocidade e fios pulsantes de energia pura. Ele arranca um painel do próprio peito, puxando uma alavanca que tenta forçar uma fratura no ar. O ambiente ao redor distorce violentamente, a chuva congela no ar e um rasgo de luz rasga o tecido da realidade. Sem pestanejar, você avança, joga a pesada engrenagem de ouro que encontrou com a vítima direto no núcleo do dispositivo dele e desarma o mecanismo. Ocorrem um estrondo ensurdecedor e um clarão cegante. Quando seus olhos se abrem, a neblina de Paranapiacaba voltou ao normal. A chuva cai na direção certa. E a figura de capa preta desabou, desmanchando-se em cinzas frias e sucata enferrujada. O fantasma de Whitechapel foi contido, a linha do tempo foi preservada, e a calmaria retorna à vila. O caso está encerrado, Detetive. Você salvou o amanhã.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL DE VITÓRIA OCULTO -->
+    <div id="win-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>🏆 Caso Encerrado!</h2>
+            <p>Parabéns, Detetive! Você usou a lógica de eliminação perfeitamente, posicionou todos os suspeitos e interceptou o Assassino no Funicular.</p>
+            <p><strong>A Linha do Tempo foi salva!</strong></p>
+            <button class="modal-btn" onclick="closeModal()">Revisar Tabuleiro</button>
+        </div>
+    </div>
+
+    <script>
+        // VARIAVEL GLOBAL DE AUDIO
+        let currentAudio = null;
+
+        // FUNÇÃO DE PLAY
+        function playAudio(filename) {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+            if (filename) {
+                currentAudio = new Audio(`audio/${filename}.mp3`);
+                currentAudio.play().catch(e => console.log("Áudio bloqueado pelo navegador até o primeiro clique:", e));
+            }
+        }
+
+        // Função Alternar Abas Principais
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+        }
+
+        // Função Alternar Sub-Abas (Personagens)
+        function showSubTab(event, targetId, audioFile) {
+            const parentTab = event.currentTarget.closest('.tab-content');
+            
+            parentTab.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            parentTab.querySelectorAll('.sub-tab-content').forEach(content => {
+                if(!content.classList.contains('hidden')) {
+                    content.classList.remove('active');
+                }
+            });
+            document.getElementById(targetId).classList.add('active');
+
+            playAudio(audioFile);
+        }
+
+        function closeModal() {
+            document.getElementById('win-modal').classList.remove('show');
+        }
+
+        // MAPA
+        const gridMap = [
+            [{bg:'pink', loc:'VGBND', icon:'🚃'}, {bg:'pink', loc:'PTFRR', icon:'⚒️'}, {bg:'pink'}, {bg:'green'}, {bg:'green', loc:'LIRA', icon:'🎭'}, {bg:'green'}, {bg:'purple'}, {bg:'purple'}, {bg:'purple'}],
+            [{bg:'pink', loc:'LOCO', icon:'☕'}, {bg:'pink'}, {bg:'pink'}, {bg:'green'}, {bg:'green'}, {bg:'green', loc:'LCBR', icon:'🍻'}, {bg:'purple'}, {bg:'purple', loc:'CMFT', icon:'⚽'}, {bg:'purple'}],
+            [{bg:'pink'}, {bg:'pink'}, {bg:'pink'}, {bg:'green', loc:'FOX', icon:'🏡'}, {bg:'green', loc:'SCLYRA', icon:'🎻'}, {bg:'green', loc:'PDMDZ', icon:'📦'}, {bg:'purple'}, {bg:'purple', loc:'MRCD', icon:'🥩'}, {bg:'dark'}],
+            [{bg:'orange'}, {bg:'orange'}, {bg:'orange'}, {bg:'orange'}, {bg:'orange'}, {bg:'dark'}, {bg:'dark'}, {bg:'dark'}, {bg:'pink'}],
+            [{bg:'orange'}, {bg:'orange', loc:'RLG', icon:'⏱️'}, {bg:'orange'}, {bg:'orange'}, {bg:'orange'}, {bg:'dark'}, {bg:'pink'}, {bg:'pink'}, {bg:'pink', loc:'CASTL', icon:'🏰'}],
+            [{bg:'dark', loc:'IGJ', icon:'⛪'}, {bg:'dark'}, {bg:'dark', loc:'PNT2', icon:'🌉'}, {bg:'dark'}, {bg:'dark'}, {bg:'dark'}, {bg:'dark'}, {bg:'dark'}, {bg:'pink', loc:'RSAT', icon:'🧱'}],
+            [{bg:'green'}, {bg:'green', loc:'PNT1', icon:'🌉'}, {bg:'dark'}, {bg:'dark', loc:'LGPD', icon:'🥖'}, {bg:'dark'}, {bg:'blue'}, {bg:'blue'}, {bg:'dark'}, {bg:'dark'}],
+            [{bg:'green'}, {bg:'green'}, {bg:'dark'}, {bg:'blue'}, {bg:'blue'}, {bg:'blue'}, {bg:'blue', loc:'CSMQ', icon:'⚕️'}, {bg:'dark'}, {bg:'dark'}],
+            [{bg:'green', loc:'CMTR', icon:'🪦'}, {bg:'green'}, {bg:'dark'}, {bg:'blue'}, {bg:'blue', loc:'HSPT', icon:'🏥'}, {bg:'blue'}, {bg:'dark'}, {bg:'dark', loc:'FNC', icon:'⚙️'}, {bg:'dark'}]
+        ];
+
+        const characters = [
+            { id: 'S1', name: 'Médico', icon: '🩺', color: '#60a5fa' },
+            { id: 'S2', name: 'Coveiro', icon: '⛏️', color: '#4ade80' },
+            { id: 'S3', name: 'Açougueiro', icon: '🥩', color: '#f97316' },
+            { id: 'S4', name: 'Botânico', icon: '🌿', color: '#2dd4bf' },
+            { id: 'S5', name: 'Maestro', icon: '🎻', color: '#a78bfa' },
+            { id: 'S6', name: 'Madame', icon: '🍷', color: '#f472b6' },
+            { id: 'S7', name: 'Barão', icon: '🎩', color: '#facc15' },
+            { id: 'VIT', name: 'Vítima', icon: '💀', color: '#ffffff' },
+            { id: 'ASS', name: 'Assassino', icon: '🔪', color: '#ef4444' }
+        ];
+
+        // GABARITO SECRETO
+        const solutionPlacements = {
+            'S5': { r: 0, c: 5 },
+            'S4': { r: 1, c: 3 },
+            'S6': { r: 2, c: 6 },
+            'S3': { r: 3, c: 2 },
+            'S7': { r: 4, c: 7 },
+            'VIT': { r: 5, c: 1 },
+            'S2': { r: 6, c: 0 },
+            'S1': { r: 7, c: 4 },
+            'ASS': { r: 8, c: 8 }
+        };
+
+        let selectedCharId = null;
+        let placements = {};
+
+        const boardEl = document.getElementById('game-board');
+        const charListEl = document.getElementById('character-list');
+
+        function initMenu() {
+            characters.forEach(char => {
+                const btn = document.createElement('button');
+                btn.className = 'char-btn';
+                btn.onclick = () => selectCharacter(char.id);
+                btn.id = `btn-${char.id}`;
+                
+                const dot = document.createElement('div');
+                dot.className = 'char-dot';
+                dot.style.borderColor = char.color;
+                
+                const icon = document.createElement('span');
+                icon.className = 'char-icon';
+                icon.innerText = char.icon;
+
+                const text = document.createElement('span');
+                text.innerText = `${char.id} (${char.name})`;
+
+                btn.appendChild(dot);
+                btn.appendChild(icon);
+                btn.appendChild(text);
+                charListEl.appendChild(btn);
+            });
+        }
+
+        function initBoard() {
+            boardEl.appendChild(createHeader(''));
+            for(let c = 1; c <= 9; c++) boardEl.appendChild(createHeader('C' + c));
+
+            for(let r = 0; r < 9; r++) {
+                boardEl.appendChild(createHeader('L' + (r + 1)));
+
+                for(let c = 0; c < 9; c++) {
+                    const cellData = gridMap[r][c];
+                    const cell = document.createElement('div');
+                    
+                    cell.className = `cell bg-${cellData.bg}`;
+                    if(cellData.loc) cell.classList.add('blocked');
+                    cell.id = `cell-${r}-${c}`;
+                    cell.onclick = () => handleCellClick(r, c);
+
+                    if(cellData.loc) {
+                        const locToken = document.createElement('div');
+                        locToken.className = 'location-token';
+                        locToken.innerHTML = `<span class="loc-icon">${cellData.icon}</span><span class="loc-text">${cellData.loc}</span>`;
+                        cell.appendChild(locToken);
+                    }
+
+                    const xContainer = document.createElement('div');
+                    xContainer.className = 'x-container';
+                    xContainer.id = `xc-${r}-${c}`;
+                    cell.appendChild(xContainer);
+
+                    const tokenContainer = document.createElement('div');
+                    tokenContainer.className = 'tc-container';
+                    tokenContainer.id = `tc-${r}-${c}`;
+                    cell.appendChild(tokenContainer);
+
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        function createHeader(text) {
+            const div = document.createElement('div');
+            div.className = 'header-cell';
+            div.innerText = text;
+            return div;
+        }
+
+        function selectCharacter(id) {
+            selectedCharId = id;
+            document.querySelectorAll('.char-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById(`btn-${id}`).classList.add('selected');
+        }
+
+        function handleCellClick(r, c) {
+            let occupant = null;
+            for (const [char, pos] of Object.entries(placements)) {
+                if (pos.r === r && pos.c === c) {
+                    occupant = char;
+                    break;
+                }
+            }
+
+            if (occupant) {
+                delete placements[occupant];
+                renderLogic();
+                return;
+            }
+
+            if(gridMap[r][c].loc) return; 
+
+            if (selectedCharId) {
+                placements[selectedCharId] = { r, c };
+                renderLogic();
+            }
+        }
+
+        function renderLogic() {
+            for(let r=0; r<9; r++) {
+                for(let c=0; c<9; c++) {
+                    document.getElementById(`tc-${r}-${c}`).innerHTML = '';
+                    document.getElementById(`xc-${r}-${c}`).innerHTML = '';
+                }
+            }
+
+            for (const [charId, pos] of Object.entries(placements)) {
+                const charData = characters.find(c => c.id === charId);
+                
+                const token = document.createElement('div');
+                token.className = 'character-token';
+                token.innerText = charId;
+                token.style.borderColor = charData.color; 
+                document.getElementById(`tc-${pos.r}-${pos.c}`).appendChild(token);
+
+                for(let i=0; i<9; i++) {
+                    if (i !== pos.r) addXMark(i, pos.c, charData.color);
+                    if (i !== pos.c) addXMark(pos.r, i, charData.color);
+                }
+            }
+
+            updateProgressiveUnlocks();
+            checkWinCondition();
+        }
+
+        function addXMark(r, c, color) {
+            const xCont = document.getElementById(`xc-${r}-${c}`);
+            const span = document.createElement('span');
+            span.className = 'x-mark';
+            span.style.setProperty('--x-color', color); 
+            span.innerText = 'X';
+            xCont.appendChild(span);
+        }
+
+        function updateProgressiveUnlocks() {
+            const suspects = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'];
+            let correctSuspects = 0;
+
+            suspects.forEach(s => {
+                if (placements[s] && placements[s].r === solutionPlacements[s].r && placements[s].c === solutionPlacements[s].c) {
+                    correctSuspects++;
+                }
+            });
+
+            const vitimaCorrect = placements['VIT'] && placements['VIT'].r === solutionPlacements['VIT'].r && placements['VIT'].c === solutionPlacements['VIT'].c;
+
+            const vitLocked = document.getElementById('vitima-locked');
+            const vitUnlocked = document.getElementById('vitima-unlocked');
+            
+            if (correctSuspects === 7) {
+                vitLocked.classList.add('hidden');
+                vitUnlocked.classList.remove('hidden');
+                vitUnlocked.classList.add('active'); 
+            } else {
+                vitLocked.classList.remove('hidden');
+                vitUnlocked.classList.add('hidden');
+                vitUnlocked.classList.remove('active');
+            }
+
+            const assLocked = document.getElementById('assassino-locked');
+            const assUnlocked = document.getElementById('assassino-unlocked');
+
+            if (correctSuspects === 7 && vitimaCorrect) {
+                assLocked.classList.add('hidden');
+                assUnlocked.classList.remove('hidden');
+                assUnlocked.classList.add('active');
+            } else {
+                assLocked.classList.remove('hidden');
+                assUnlocked.classList.add('hidden');
+                assUnlocked.classList.remove('active');
+            }
+        }
+
+        function checkWinCondition() {
+            let correctCount = 0;
+            if(Object.keys(placements).length !== 9) return;
+            
+            for (const [char, pos] of Object.entries(placements)) {
+                if (solutionPlacements[char] && solutionPlacements[char].r === pos.r && solutionPlacements[char].c === pos.c) {
+                    correctCount++;
+                } else {
+                    return; 
+                }
+            }
+            if (correctCount === 9) {
+                setTimeout(() => {
+                    document.getElementById('win-modal').classList.add('show');
+                }, 600); 
+            }
+        }
+
+        initMenu();
+        initBoard();
+    </script>
+</body>
+</html>

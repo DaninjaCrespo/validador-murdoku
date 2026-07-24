@@ -181,7 +181,7 @@
         .legend-item span.icon { font-size: 20px; } 
         .legend-item strong { color: var(--accent); font-size: 11px;}
 
-        /* SISTEMA DE ABAS PRINCIPAIS (Passos) */
+        /* SISTEMA DE ABAS PRINCIPAIS */
         .tabs-header {
             display: flex;
             flex-wrap: wrap;
@@ -214,7 +214,7 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* SISTEMA DE SUB-ABAS (Personagens) */
+        /* SISTEMA DE SUB-ABAS */
         .sub-tabs-header {
             display: flex;
             flex-wrap: nowrap;
@@ -252,6 +252,38 @@
         .sub-tab-content { display: none; animation: fadeIn 0.3s; }
         .sub-tab-content.active { display: block; }
 
+        /* ESTILO DO TÍTULO COM BOTÃO DE PLAY */
+        .char-name-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--highlight);
+            font-size: 14px;
+            margin: 0 0 12px 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 800;
+        }
+        .replay-btn {
+            background: #10b981;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            color: white;
+            font-size: 14px;
+            transition: 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+        }
+        .replay-btn:hover {
+            background: #059669;
+            transform: scale(1.1);
+        }
+
         /* Estilo Relatório Investigativo */
         .quote-large { 
             font-family: 'Inter', sans-serif;
@@ -259,7 +291,7 @@
             line-height: 1.6; 
             color: #f8fafc; 
             background: rgba(0,0,0,0.4); 
-            padding: 25px; 
+            padding: 20px 25px; 
             border-left: 5px solid var(--accent); 
             border-radius: 0 12px 12px 0;
             box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
@@ -507,18 +539,22 @@
                     <!-- PASSO 1 -->
                     <div id="tab-cam1" class="tab-content active">
                         <div class="sub-tabs-header">
-                            <button class="sub-tab-btn active" onclick="showSubTab(event, 'cam1-s6')">🍷 S6 (Madame)</button>
-                            <button class="sub-tab-btn" onclick="showSubTab(event, 'cam1-s1')">🩺 S1 (Médico)</button>
-                            <button class="sub-tab-btn" onclick="showSubTab(event, 'cam1-s2')">⛏️ S2 (Coveiro)</button>
+                            <!-- Os botões agora chamam o showSubTab passando também o nome exato do arquivo de áudio -->
+                            <button class="sub-tab-btn active" onclick="showSubTab(event, 'cam1-s6', 'MADAME')">🍷 S6 (Madame)</button>
+                            <button class="sub-tab-btn" onclick="showSubTab(event, 'cam1-s1', 'MEDICO')">🩺 S1 (Médico)</button>
+                            <button class="sub-tab-btn" onclick="showSubTab(event, 'cam1-s2', 'COVEIRO')">⛏️ S2 (Coveiro)</button>
                         </div>
                         
                         <div id="cam1-s6" class="sub-tab-content active">
+                            <h4 class="char-name-title">🍷 S6 (Madame) <button class="replay-btn" onclick="playAudio('MADAME')" title="Ouvir Novamente">▶️</button></h4>
                             <p class="quote-large">"Insolência pura. Sangue de rua não entra no meu casarão no setor lilás (Roxo). Eu tranquei todas as portas! Se quer um culpado com estômago para isso, vá interrogar o Barão (S7). Da minha varanda, olhando duas ruas para baixo, eu via perfeitamente a mansão pretensiosa dele. Ele assistiu ao massacre de camarote e não moveu um único dedo. Covarde."</p>
                         </div>
                         <div id="cam1-s1" class="sub-tab-content">
+                            <h4 class="char-name-title">🩺 S1 (Médico) <button class="replay-btn" onclick="playAudio('MEDICO')" title="Ouvir Novamente">▶️</button></h4>
                             <p class="quote-large">"Um corte limpo no pescoço não faz de mim um assassino, detetive. Se eu quisesse matar alguém, não deixaria vestígios. Antes do corpo esfriar eu já estava trancado na Ala Médica (Azul). O meu posto fica a três ruas de distância, colina abaixo do Castelinho daquele Barão prepotente (S7). Eu estava sozinho cercado de cadáveres reais, não de fantasmas. O Estripador está lá fora."</p>
                         </div>
                         <div id="cam1-s2" class="sub-tab-content">
+                            <h4 class="char-name-title">⛏️ S2 (Coveiro) <button class="replay-btn" onclick="playAudio('COVEIRO')" title="Ouvir Novamente">▶️</button></h4>
                             <p class="quote-large">"A corda sempre arrebenta pro lado mais fraco da vila, não é? Um corpo aparece na neblina e a culpa cai direto no coveiro. Mas eu nem desci para a vila hoje. Fiquei isolado na fronteira do Bosque (Verde). Minha cabana fica logo na rua de cima do necrotério daquele Doutor arrogante (S1). Podem me prender se quiserem, a palavra de um coveiro não vale nada pra lei... mas a morte de hoje não fui eu quem cavei."</p>
                         </div>
                     </div>
@@ -526,14 +562,16 @@
                     <!-- PASSO 2 -->
                     <div id="tab-cam2" class="tab-content">
                         <div class="sub-tabs-header">
-                            <button class="sub-tab-btn active" onclick="showSubTab(event, 'cam2-s5')">🎻 S5 (Maestro)</button>
-                            <button class="sub-tab-btn" onclick="showSubTab(event, 'cam2-s3')">🥩 S3 (Açougueiro)</button>
+                            <button class="sub-tab-btn active" onclick="showSubTab(event, 'cam2-s5', 'MAESTRO')">🎻 S5 (Maestro)</button>
+                            <button class="sub-tab-btn" onclick="showSubTab(event, 'cam2-s3', 'ACOGUEIRO')">🥩 S3 (Açougueiro)</button>
                         </div>
 
                         <div id="cam2-s5" class="sub-tab-content active">
+                            <h4 class="char-name-title">🎻 S5 (Maestro) <button class="replay-btn" onclick="playAudio('MAESTRO')" title="Ouvir Novamente">▶️</button></h4>
                             <p class="quote-large">"Ah, o novo sabichão da vila. Sua presença está arruinando a minha acústica, detetive. Pessoas da minha classe não sujam as mãos com facas de açougue. Eu passei a noite no Bosque (Verde), inspirando-me. A parede da minha casa fica colada do lado esquerdo da varanda daquela tola da Madame (S6). Ela deve ter me ouvido tocar violino a noite toda. Vá atormentar os operários da vila, a arte não tem tempo para inquisidores."</p>
                         </div>
                         <div id="cam2-s3" class="sub-tab-content">
+                            <h4 class="char-name-title">🥩 S3 (Açougueiro) <button class="replay-btn" onclick="playAudio('ACOGUEIRO')" title="Ouvir Novamente">▶️</button></h4>
                             <p class="quote-large">"Olha bem pra minha cara, detetive! Eu corto carne de boi o dia todo no Mercado (Laranja), tenho calos nas mãos e uma faca na cintura, sim! Mas eu não sou um monstro! Passei a madrugada trabalhando. Minha barraca fica logo na viela à esquerda de onde aquele botânico medroso (S4) cuida das plantas! Quer achar o assassino? Vá subir a colina e pergunte pra aristocracia que acha que é dona de vidas e mortes."</p>
                         </div>
                     </div>
@@ -541,14 +579,17 @@
                     <!-- PASSO 3 -->
                     <div id="tab-cam3" class="tab-content">
                         <div class="sub-tabs-header">
-                            <button class="sub-tab-btn active" onclick="showSubTab(event, 'cam3-s7')">🎩 S7 (Barão)</button>
-                            <button class="sub-tab-btn" onclick="showSubTab(event, 'cam3-s4')">🌿 S4 (Botânico)</button>
+                            <button class="sub-tab-btn active" onclick="showSubTab(event, 'cam3-s7', 'BARAO')">🎩 S7 (Barão)</button>
+                            <button class="sub-tab-btn" onclick="showSubTab(event, 'cam3-s4', null)">🌿 S4 (Botânico)</button>
                         </div>
 
                         <div id="cam3-s7" class="sub-tab-content active">
+                            <h4 class="char-name-title">🎩 S7 (Barão) <button class="replay-btn" onclick="playAudio('BARAO')" title="Ouvir Novamente">▶️</button></h4>
                             <p class="quote-large">"Retire-se imediatamente da minha propriedade, detetive de meia-pataca. Você deveria estar nas ruas imundas farejando a ralé, não ousando pisar nos portões do Castelinho. Eu estava seguro nos jardins da elite (Rosa). Minha mansão ocupa o quarteirão da quinta alameda com a oitava rua (Linha 5, Coluna 8). Da minha janela panorâmica, eu vi quando aquele lunático encurralou a coitada perto da Capela (IGJ). A neblina a engoliu para a Trilha Escura (Preta). Faça o seu trabalho insignificante e pare de me incomodar."</p>
                         </div>
                         <div id="cam3-s4" class="sub-tab-content">
+                            <!-- O Botânico ainda não tem áudio, então sem o botão por enquanto -->
+                            <h4 class="char-name-title">🌿 S4 (Botânico)</h4>
                             <p class="quote-large">"Por favor, Detetive, o senhor tem que acreditar em mim! Eu sei que não tenho testemunhas na neblina, eu sei que parece horrível! Quando os gritos começaram, eu me joguei na lama do Bosque (Verde) e fiquei rezando! Eu estava escondido lá pela segunda rua (Linha 2)... Sabe a Casa Fox (FOX), aquelas casas geminadas antigas dos ingleses? Eu estava espremido na mesma viela que elas. Eu só fechei os olhos pra lâmina dele não me achar. Pelo amor de Deus, não me mande pra cadeia!"</p>
                         </div>
                     </div>
@@ -566,6 +607,7 @@
                         </div>
 
                         <div id="vitima-unlocked" class="sub-tab-content hidden">
+                            <h4 class="char-name-title">💀 A Vítima</h4>
                             <p class="quote-large">A lógica implacável do seu tabuleiro revelou a cena do crime. O rastro leva diretamente ao beco da Trilha Escura (área Preta), no único espaço livre perfeitamente ao lado da velha Capela (IGJ). Você afasta a neblina pesada com as mãos e encontra o corpo. O terror o paralisa por um instante. É exatamente como nos relatórios de Londres de 1888. Um corte cirúrgico, limpo, impiedoso e brutal. O sangue ainda escorre quente pelas pedras de paralelepípedo da rua. Vasculhando os bolsos da vítima em busca de respostas, seus dedos encontram um objeto metálico anômalo: uma pequena engrenagem de ouro maciço, pesada demais para a época, que pulsa emitindo um calor inexplicável. Não há tempo para pensar nisso agora. O falso Jack está fugindo.</p>
                         </div>
                     </div>
@@ -583,6 +625,7 @@
                         </div>
 
                         <div id="assassino-unlocked" class="sub-tab-content hidden">
+                            <h4 class="char-name-title">🔪 O Assassino</h4>
                             <p class="quote-large">A matemática não mente. Após posicionar todos os suspeitos e a vítima respeitando a regra de ouro do tabuleiro (cada um reinando sozinho em sua própria linha e coluna), o cerco se fecha. Sobra apenas um único espaço vazio disponível em todo o terreno da Trilha Escura (Preta). É lá que ele está! Você dispara pela neblina com a arma em punho e chega à base operacional do Funicular. A figura alta, vestida com a clássica capa preta e cartola, está encurralada contra as caldeiras a vapor da máquina. "Acabou, Jack!", você grita, engatilhando o revólver. O assassino se vira lentamente. Mas, por baixo da aba da cartola, não há os olhos de um louco vitoriano: há engrenagens girando em alta velocidade e fios pulsantes de energia pura. Ele arranca um painel do próprio peito, puxando uma alavanca que tenta forçar uma fratura no ar. O ambiente ao redor distorce violentamente, a chuva congela no ar e um rasgo de luz rasga o tecido da realidade. Sem pestanejar, você avança, joga a pesada engrenagem de ouro que encontrou com a vítima direto no núcleo do dispositivo dele e desarma o mecanismo. Ocorrem um estrondo ensurdecedor e um clarão cegante. Quando seus olhos se abrem, a neblina de Paranapiacaba voltou ao normal. A chuva cai na direção certa. E a figura de capa preta desabou, desmanchando-se em cinzas frias e sucata enferrujada. O fantasma de Whitechapel foi contido, a linha do tempo foi preservada, e a calmaria retorna à vila. O caso está encerrado, Detetive. Você salvou o amanhã.</p>
                         </div>
                     </div>
@@ -604,16 +647,39 @@
     </div>
 
     <script>
+        // VARIAVEL GLOBAL DE AUDIO
+        let currentAudio = null;
+
+        // FUNÇÃO DE PLAY
+        function playAudio(filename) {
+            // Se já tem um áudio tocando, pausa e zera ele
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+            // Se foi passado um nome de arquivo válido, toca o novo
+            if (filename) {
+                currentAudio = new Audio(`audio/${filename}.mp3`);
+                currentAudio.play().catch(e => console.log("Áudio bloqueado pelo navegador até o primeiro clique:", e));
+            }
+        }
+
         // Função Alternar Abas Principais
         function showTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             event.target.classList.add('active');
+
+            // Pausa o áudio ao trocar de aba principal para não virar bagunça
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
         }
 
         // Função Alternar Sub-Abas (Personagens)
-        function showSubTab(event, targetId) {
+        function showSubTab(event, targetId, audioFile) {
             const parentTab = event.currentTarget.closest('.tab-content');
             
             parentTab.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -625,13 +691,16 @@
                 }
             });
             document.getElementById(targetId).classList.add('active');
+
+            // Aciona o áudio do personagem selecionado
+            playAudio(audioFile);
         }
 
         function closeModal() {
             document.getElementById('win-modal').classList.remove('show');
         }
 
-        // MAPA ATUALIZADO
+        // MAPA
         const gridMap = [
             [{bg:'pink', loc:'VGBND', icon:'🚃'}, {bg:'pink', loc:'PTFRR', icon:'⚒️'}, {bg:'pink'}, {bg:'green'}, {bg:'green', loc:'LIRA', icon:'🎭'}, {bg:'green'}, {bg:'purple'}, {bg:'purple'}, {bg:'purple'}],
             [{bg:'pink', loc:'LOCO', icon:'☕'}, {bg:'pink'}, {bg:'pink'}, {bg:'green'}, {bg:'green'}, {bg:'green', loc:'LCBR', icon:'🍻'}, {bg:'purple'}, {bg:'purple', loc:'CMFT', icon:'⚽'}, {bg:'purple'}],

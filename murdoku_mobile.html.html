@@ -728,6 +728,7 @@
     <script>
         // VARIAVEL GLOBAL DE AUDIO
         let currentAudio = null;
+        let climaxAudioPlayed = false; // <-- Nova variável para controlar o áudio do Clímax
 
         // FUNÇÃO DE PLAY
         function playAudio(filename) {
@@ -926,6 +927,10 @@
                 }
             }
 
+            // CONTADOR PARA O ÁUDIO DE CLÍMAX
+            const suspectsList = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'];
+            let placedSuspectsCount = 0;
+
             for (const [charId, pos] of Object.entries(placements)) {
                 const charData = characters.find(c => c.id === charId);
                 
@@ -939,6 +944,17 @@
                     if (i !== pos.r) addXMark(i, pos.c, charData.color);
                     if (i !== pos.c) addXMark(pos.r, i, charData.color);
                 }
+
+                // Se o personagem colocado for um suspeito, aumenta o contador
+                if (suspectsList.includes(charId)) {
+                    placedSuspectsCount++;
+                }
+            }
+
+            // GATILHO DO ÁUDIO QUANDO 7 SUSPEITOS FOREM COLOCADOS
+            if (placedSuspectsCount === 7 && !climaxAudioPlayed) {
+                playAudio('CLIMAX'); // <--- Nome do arquivo MP3 que você criou
+                climaxAudioPlayed = true;
             }
 
             updateProgressiveUnlocks();

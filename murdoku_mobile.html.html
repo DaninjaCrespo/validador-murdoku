@@ -164,6 +164,27 @@
             gap: 8px;
         }
 
+        /* PRÓLOGO (NOVO) */
+        .prologue-box {
+            background: rgba(15, 23, 42, 0.6);
+            border-left: 3px solid var(--red);
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            border-radius: 0 8px 8px 0;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+        }
+        .prologue-box strong {
+            color: #f87171;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 1px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
         /* LEGENDA */
         .legend-grid {
             display: grid;
@@ -580,6 +601,12 @@
             <div class="side-panel right-panel">
                 <h2>📝 Roteiro de Evidências</h2>
                 
+                <!-- CAIXA DO PRÓLOGO COMPACTA -->
+                <div class="prologue-box">
+                    <strong>Prólogo: O Retorno de Jack</strong>
+                    O Big Ben soou fora de hora e um corpo foi encontrado com a marca brutal do Estripador. Paranapiacaba está isolada na neblina. Detetive, interrogue os moradores, cruze os álibis no mapa e encontre o monstro antes que ele faça outra vítima.
+                </div>
+                
                 <div class="tabs-header">
                     <button class="tab-btn active" onclick="showTab('tab-cam1')">Passo 1</button>
                     <button class="tab-btn" onclick="showTab('tab-cam2')">Passo 2</button>
@@ -633,7 +660,6 @@
                     <div id="tab-cam3" class="tab-content">
                         <div class="sub-tabs-header">
                             <button class="sub-tab-btn active" onclick="showSubTab(event, 'cam3-s7', 'BARAO')">🎩 S7 (Barão)</button>
-                            <!-- Atualizado para chamar o áudio do BOTANICO -->
                             <button class="sub-tab-btn" onclick="showSubTab(event, 'cam3-s4', 'BOTANICO')">🌿 S4 (Botânico)</button>
                         </div>
 
@@ -642,7 +668,6 @@
                             <p class="quote-large">"Retire-se imediatamente da minha propriedade, detetive de meia-pataca. Você deveria estar nas ruas imundas farejando a ralé, não ousando pisar nos portões do Castelinho. Eu estava seguro nos jardins da elite (Rosa). Minha mansão ocupa o quarteirão da quinta alameda com a oitava rua (Linha 5, Coluna 8). Da minha janela panorâmica, eu vi quando aquele lunático encurralou a coitada perto da Capela (IGJ). A neblina a engoliu para a Trilha Escura (Preta). Faça o seu trabalho insignificante e pare de me incomodar."</p>
                         </div>
                         <div id="cam3-s4" class="sub-tab-content">
-                            <!-- Adicionado o botão de Replay para o Botânico -->
                             <h4 class="char-name-title">🌿 S4 (Botânico) <button class="replay-btn" onclick="playAudio('BOTANICO')" title="Ouvir Novamente">▶️</button></h4>
                             <p class="quote-large">"Por favor, Detetive, o senhor tem que acreditar em mim! Eu sei que não tenho testemunhas na neblina, eu sei que parece horrível! Quando os gritos começaram, eu me joguei na lama do Bosque (Verde) e fiquei rezando! Eu estava escondido lá pela segunda rua (Linha 2)... Sabe a Casa Fox (FOX), aquelas casas geminadas antigas dos ingleses? Eu estava espremido na mesma viela que elas. Eu só fechei os olhos pra lâmina dele não me achar. Pelo amor de Deus, não me mande pra cadeia!"</p>
                         </div>

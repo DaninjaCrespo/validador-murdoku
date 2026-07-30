@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Murdoku - Mesa de Investigação: Caso Jack</title>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* ========================================================
+               🕵️ CONTROLE DA SOMBRA PRETA DAS LINHAS 
+               ======================================================== */
+            --shadow-opacity: 0.85; 
+            
+            --bg-page: #0b1120;
+            --panel-bg: rgba(30, 41, 59, 0.85);
+            --panel-border: #334155;
+            
+            --accent: #38bdf8;
+            --highlight: #facc15;
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+            
+            --ink-dark: #3e2723;
+            --paper-bg: #e6d8c3;
+        }
+
+        body {
+            background-color: var(--bg-page);
+            background-image: radial-gradient(circle at top right, #1e293b 0%, transparent 40%), 
+                              radial-gradient(circle at bottom left, #0f172a 0%, transparent 40%);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; 
+        }
+
+        .layout-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 1600px;
+            height: 98vh; 
+            gap: 12px; 
+            padding: 10px 15px;
+            box-sizing: border-box;
+        }
+
+        .board-title {
+            text-align: center;
+            margin: 0;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: var(--text-muted);
+            font-weight: 800;
+        }
+        .board-title span { color: var(--accent); }
+
+        .top-bar {
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 10px 15px; 
+            box-shadow: 0 6px 12px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .top-bar h2 {
+            margin: 0 0 8px 0; 
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--highlight);
+        }
+        .character-row {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap; 
+            gap: 10px; 
+            justify-content: center;
+            width: 100%;
+        }
+        .char-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #0f172a;
+            border: 2px solid #334155;
+            padding: 6px 12px; 
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-main);
+            font-weight: 800;
+            font-size: 13px; 
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .char-btn:hover { background: #1e293b; transform: translateY(-2px); }
+        .char-btn.selected { 
+            border-color: var(--highlight); 
+            background: #1e293b;
+            box-shadow: 0 0 10px rgba(250, 204, 21, 0.4);
+        }
+        .char-icon { font-size: 20px; } 
+
+        .workspace {
+            display: flex;
+            flex-direction: row;
+            gap: 15px; 
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .side-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 15px; 
+            flex-shrink: 0;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .left-panel { width: 250px; }
+        .right-panel { width: 460px; }
+
+        .side-panel-content {
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-right: 5px;
+        }
+        .side-panel h2 { 
+            margin-top: 0; 
+            font-size: 15px; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+            color: var(--highlight); 
+            border-bottom: 1px solid var(--panel-border); 
+            padding-bottom: 10px; 
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .prologue-box {
+            background: rgba(15, 23, 42, 0.6);
+            border-left: 3px solid #ef4444;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 0 8px 8px 0;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+        }
+        .prologue-box strong {
+            color: #f87171;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 1px;
+        }
+        #prologue-content {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-top: 8px;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 4px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .legend-item { display: flex; align-items: center; gap: 6px; line-height: 1.1; }
+        .legend-item span.icon { font-size: 20px; filter: grayscale(0.5); } 
+        .legend-item strong { color: var(--accent); font-size: 11px;}
+
+        .tabs-header { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; border-bottom: 2px solid var(--panel-border); padding-bottom: 10px; }
+        .tab-btn { background: #0f172a; border: 1px solid #334155; color: var(--text-muted); padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 800; cursor: pointer; transition: 0.2s; }
+        .tab-btn:hover { background: #1e293b; color: white;}
+        .tab-btn.active { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 8px rgba(56, 189, 248, 0.5); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .sub-tabs-header { display: flex; flex-wrap: nowrap; gap: 8px; margin-bottom: 15px; background: #0f172a; padding: 6px; border-radius: 8px; border: 1px solid #334155; }
+        .sub-tab-btn { flex: 1; background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: 8px 4px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .sub-tab-btn:hover { color: white; background: rgba(255,255,255,0.05); }
+        .sub-tab-btn.active { background: #1e293b; color: var(--highlight); box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #475569; }
+        .sub-tab-content { display: none; animation: fadeIn 0.3s; }
+        .sub-tab-content.active { display: block; }
+
+        .char-name-title { display: flex; align-items: center; gap: 12px; color: var(--highlight); font-size: 14px; margin: 0 0 12px 6px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
+        .replay-btn { background: #10b981; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-size: 14px; transition: 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.5); }
+        .replay-btn:hover { background: #059669; transform: scale(1.1); }
+        .quote-large { font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.5; color: #f8fafc; background: rgba(0,0,0,0.4); padding: 15px 20px; border-left: 5px solid var(--accent); border-radius: 0 12px 12px 0; box-shadow: inset 0 0 15px rgba(0,0,0,0.5); margin: 0; }
+        
+        .options-container { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; }
+        
+        /* UI DE DECISÃO */
+        .decision-title { color: var(--highlight); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin: 5px 0 5px 0; display: flex; align-items: center; gap: 6px; }
+        .decision-title::before { content: '⚡'; font-size: 14px; }
+        .choice-btn { background: #0f172a; border: 1px solid #334155; color: var(--text-muted); padding: 10px 15px; border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 12px; line-height: 1.4; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 12px; text-align: left; }
+        .choice-btn:hover { background: #1e293b; border-color: var(--highlight); color: white; transform: translateY(-1px); }
+        .choice-btn strong { color: var(--accent); margin-right: 5px; }
+        .play-icon-small { background: #10b981; border-radius: 50%; min-width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; color: white; font-size: 11px; box-shadow: 0 2px 4px rgba(0,0,0,0.5); flex-shrink: 0; transition: 0.2s; }
+        .choice-btn:hover .play-icon-small { background: #059669; transform: scale(1.1); }
+        
+        .selected-choice-container { margin-top: 10px; animation: fadeIn 0.4s; }
+        .hidden { display: none !important; }
+
+        /* =========================================
+           ✨ MAPA DE INVESTIGAÇÃO ✨ 
+           ========================================= */
+        .board-container { flex-grow: 1; display: flex; justify-content: center; align-items: center; padding: 0; }
+        
+        .board {
+            display: grid;
+            grid-template-columns: 75px repeat(9, 62px); 
+            grid-template-rows: 55px repeat(9, 62px); 
+            background-color: var(--paper-bg); 
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, var(--fog-opacity, 0)), rgba(255, 255, 255, var(--fog-opacity, 0))), 
+                url('mapa-fundo.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            padding: 40px 40px 40px 10px; 
+            border-radius: 8px;
+            border: 12px solid #4a3424; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.9), inset 0 0 40px rgba(0,0,0,0.5);
+            overflow: hidden; 
+            position: relative;
+            transition: background-image 0.5s ease;
+        }
+
+        .cell {
+            position: relative; background-color: transparent; 
+            border-right: 1px solid rgba(40, 40, 40, 0.15); border-bottom: 1px solid rgba(40, 40, 40, 0.15);
+            border-top: 1px solid transparent; border-left: 1px solid transparent; 
+            box-sizing: border-box; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; user-select: none; z-index: 2; 
+        }
+
+        .cell:hover:not(.blocked) { background-color: rgba(62, 39, 35, 0.12); } 
+        .cell::after { content: '+'; position: absolute; bottom: -7.5px; right: -4px; color: rgba(40, 40, 40, 0.3); font-size: 11px; font-family: monospace; pointer-events: none; }
+
+        @keyframes errorShake {
+            0% { transform: translateX(0); } 25% { transform: translateX(-4px); background-color: rgba(239, 68, 68, 0.6) !important; }
+            50% { transform: translateX(4px); } 75% { transform: translateX(-4px); background-color: rgba(239, 68, 68, 0.6) !important; } 100% { transform: translateX(0); }
+        }
+        .cell.error-shake { animation: errorShake 0.3s ease-in-out; }
+        .cell.border-r-thick { border-right: 3px dashed rgba(20, 10, 5, 1) !important; }
+        .cell.border-b-thick { border-bottom: 3px dashed rgba(20, 10, 5, 1) !important; }
+        .cell.border-l-thick { border-left: 3px dashed rgba(20, 10, 5, 1) !important; }
+        .cell.border-t-thick { border-top: 3px dashed rgba(20, 10, 5, 1) !important; }
+
+        .district-center::before {
+            content: attr(data-district); position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-10deg); font-family: 'Courier Prime', monospace;
+            font-size: 19px; color: rgba(40, 20, 15, 1); 
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.7), -1px -1px 0px rgba(255,255,255,0.7), 1px -1px 0px rgba(255,255,255,0.7), -1px 1px 0px rgba(255,255,255,0.7);
+            font-weight: 900; text-align: center; white-space: pre-wrap; width: 160px; pointer-events: none; text-transform: uppercase; letter-spacing: 3px; z-index: 10;
+        }
+
+        .district-center.shift-right::before { left: calc(50% + 31px); width: 124px; }
+
+        .header-cell { display: flex; justify-content: center; align-items: center; text-align: center; position: relative; z-index: 110; }
+        
+        .post-it {
+            background: #fdf8eb; padding: 4px 6px; border-radius: 2px;
+            box-shadow: 1px 2px 5px rgba(0,0,0,0.5); color: var(--ink-dark);
+            font-family: 'Courier Prime', monospace; font-size: 12px; font-weight: 800; border: 1px solid rgba(0,0,0,0.1); line-height: 1.1; transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .post-it-time span { display: block; font-size: 12px; margin-bottom: 2px; }
+
+        .sketchy-x { position: absolute; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; animation: fadeIn 0.3s ease; pointer-events: none; }
+        .sketchy-x svg { width: 32px; height: 32px; filter: drop-shadow(1px 2px 1px rgba(0,0,0,0.4)); }
+
+        .cell.blocked { cursor: not-allowed; }
+        .location-token {
+            width: 52px; height: 46px; background: #d7ccc8; border: 1px solid #8d6e63; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: var(--ink-dark); z-index: 3; box-shadow: 2px 3px 5px rgba(0,0,0,0.5); padding-top: 4px; position: relative;
+        }
+        .location-token::before {
+            content: ''; position: absolute; top: 3px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; background: #b0bec5; border-radius: 50%;
+            box-shadow: inset -1px -1px 2px rgba(0,0,0,0.5), 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        .loc-icon { font-size: 16px; line-height: 1; margin-bottom: 2px; filter: sepia(1);} 
+        .loc-text { font-family: 'Courier Prime', monospace; font-size: 9px; font-weight: 900; line-height: 1; color: var(--ink-dark);}
+
+        .tc-container, .x-container { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: center; pointer-events: none; }
+        .tc-container { z-index: 10; } .x-container { z-index: 4; } 
+           
+        .character-token {
+            position: absolute; top: 0; left: 0; width: 62px; height: 62px; background: #f8fafc; border: 2px solid white; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding-top: 5px; color: #000; box-shadow: 2px 4px 8px rgba(0,0,0,0.5); pointer-events: auto; z-index: 50; 
+        }
+        .character-token::after {
+            content: ''; position: absolute; top: 6px; left: 50%; transform: translateX(-50%); width: 9px; height: 9px; background: #ef4444; border-radius: 50%; box-shadow: inset -2px -2px 3px rgba(0,0,0,0.5), 1px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .long-thread-h { position: absolute; top: -2px; left: -1500px; right: -1500px; height: 4px; background: #dc2626; box-shadow: 0px 31px 15px 6px rgba(0, 0, 0, var(--shadow-opacity)); z-index: 1; }
+        .long-thread-v { position: absolute; left: 50%; margin-left: -2px; top: -1500px; bottom: -1500px; width: 4px; background: #dc2626; box-shadow: 15px 0px 15px 6px rgba(0, 0, 0, var(--shadow-opacity)); z-index: 1; }
+
+        .locked-msg { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: rgba(15, 23, 42, 0.7); border: 2px dashed #475569; border-radius: 12px; padding: 40px 20px; color: var(--text-muted); animation: fadeIn 0.3s; }
+        .locked-msg .lock-icon { font-size: 45px; margin-bottom: 15px; filter: grayscale(1); opacity: 0.7; }
+        .locked-msg h3 { color: #facc15; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 2px; font-size: 16px; }
+        .locked-msg p { margin: 0; font-size: 14px; line-height: 1.5; max-width: 90%; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+        .modal-overlay.show { opacity: 1; pointer-events: auto; }
+        .modal-content { background: #1e293b; border: 3px solid #facc15; border-radius: 12px; padding: 40px; text-align: center; max-width: 450px; box-shadow: 0 0 40px rgba(250, 204, 21, 0.4); transform: scale(0.9); transition: transform 0.4s ease; }
+        .modal-overlay.show .modal-content { transform: scale(1); }
+        .modal-content h2 { color: #facc15; font-size: 28px; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; }
+        .modal-content p { color: #f8fafc; font-size: 16px; line-height: 1.5; margin-bottom: 30px; }
+        .modal-btn { background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 800; font-size: 16px; cursor: pointer; transition: background 0.2s; text-transform: uppercase; }
+        .modal-btn:hover { background: #059669; }
+
+        @media (max-width: 950px) {
+            body { height: auto; overflow-y: auto; padding: 10px 0 30px 0; } .layout-container { height: auto; padding: 5px 10px; }
+            .workspace { flex-direction: column; align-items: center; gap: 20px; } .board-container { order: 1; width: 100%; padding: 0; } .left-panel { order: 2; width: 100%; max-width: 100%; } .right-panel { order: 3; width: 100%; max-width: 100%; } 
+            .board { grid-template-columns: 55px repeat(9, 34px); grid-template-rows: 40px repeat(9, 34px); gap: 0px; padding: 15px 15px 15px 5px; border-width: 6px; }
+            .post-it { font-size: 8px; padding: 3px 4px; } .post-it-time span { font-size: 9px; margin-bottom: 1px;} .cell::after { font-size: 8px; bottom: -5px; right: -3px; }
+            .location-token { width: 30px; height: 30px; padding-top: 1px; } .loc-icon { font-size: 11px; margin-bottom: 0px; } .loc-text { font-size: 6px; letter-spacing: 0px; }
+            .character-token { width: 34px; height: 34px; border-width: 1px; padding-top: 3px; } .character-token::after { top: 3px; width: 5px; height: 5px; } .character-token span:first-child { font-size: 14px !important; margin-top:0 !important; } .character-token span:last-child { font-size: 7px !important; }
+            .long-thread-h { box-shadow: 0px 17px 8px 3px rgba(0, 0, 0, var(--shadow-opacity)); } .long-thread-v { box-shadow: 8px 0px 8px 3px rgba(0, 0, 0, var(--shadow-opacity)); }
+            .district-center::before { font-size: 11px; width: 90px; } .sketchy-x svg { width: 20px; height: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="layout-container">
+        <p class="board-title">🔍 Quadro do Detetive: <span>Caso Jack</span></p>
+        
+        <div class="top-bar">
+            <h2>Fichas de Suspeitos (Use tachinhas para cruzar Tempo e Espaço)</h2>
+            <div id="character-list" class="character-row"></div>
+        </div>
+
+        <div class="workspace">
+            
+            <div class="side-panel left-panel">
+                <h2>🗺️ Locais Isolados</h2>
+                <div class="side-panel-content">
+                    <div class="legend-grid">
+                        <div class="legend-item"><span class="icon">🚃</span> <div><strong>VGBND</strong><br>Vagão Aband.</div></div>
+                        <div class="legend-item"><span class="icon">🛤️</span> <div><strong>PTFRR</strong><br>Pátio Ferroviário</div></div>
+                        <div class="legend-item"><span class="icon">🎭</span> <div><strong>CLIR</strong><br>Clube Lira</div></div>
+                        <div class="legend-item"><span class="icon">🚂</span> <div><strong>LOCO</strong><br>Locobreque</div></div>
+                        <div class="legend-item"><span class="icon">🍻</span> <div><strong>LCBR</strong><br>Bar</div></div>
+                        <div class="legend-item"><span class="icon">⚽</span> <div><strong>CMFT</strong><br>C. Futebol</div></div>
+                        <div class="legend-item"><span class="icon">🏡</span> <div><strong>FOX</strong><br>Casa Fox</div></div>
+                        <div class="legend-item"><span class="icon">🎻</span> <div><strong>SLIR</strong><br>Sociedade Lira</div></div>
+                        <div class="legend-item"><span class="icon">🥖</span> <div><strong>PDMDZ</strong><br>Padaria Mendes</div></div>
+                        <div class="legend-item"><span class="icon">💧</span> <div><strong>RSVR</strong><br>Reservatório SPR</div></div>
+                        <div class="legend-item"><span class="icon">🥩</span> <div><strong>MRCD</strong><br>Mercado</div></div>
+                        <div class="legend-item"><span class="icon">⏱️</span> <div><strong>RLG</strong><br>Relógio</div></div>
+                        <div class="legend-item"><span class="icon">🏰</span> <div><strong>CASTL</strong><br>Castelinho</div></div>
+                        <div class="legend-item"><span class="icon">⛪</span> <div><strong>IGJ</strong><br>Capela</div></div>
+                        <div class="legend-item"><span class="icon">🌉</span> <div><strong>PNT2</strong><br>Ponte Velha</div></div>
+                        <div class="legend-item"><span class="icon">🧱</span> <div><strong>RSAT</strong><br>Ruínas</div></div>
+                        <div class="legend-item"><span class="icon">🏭</span> <div><strong>DPLC</strong><br>Dep. Locomotiva</div></div>
+                        <div class="legend-item"><span class="icon">🔧</span> <div><strong>CSMQ</strong><br>Casa de Máquinas</div></div>
+                        <div class="legend-item"><span class="icon">🪦</span> <div><strong>CMTR</strong><br>Cemitério</div></div>
+                        <div class="legend-item"><span class="icon">🏥</span> <div><strong>HSPT</strong><br>Hospital</div></div>
+                        <div class="legend-item"><span class="icon">⚙️</span> <div><strong>FNC</strong><br>Funicular</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="board-container">
+                <div class="board" id="game-board">
+                </div>
+            </div>
+
+            <div class="side-panel right-panel">
+                <h2>📝 Depoimentos Oficiais</h2>
+                
+                <div class="prologue-box" id="prologue-box">
+                    <div style="display:flex; justify-content: space-between; align-items: center; cursor:pointer;" onclick="togglePrologue()">
+                        <strong>Prólogo: O Retorno de Jack</strong>
+                        <span id="prologue-icon" style="font-size: 10px; font-weight:bold; color:#f87171;">▼ Minimize</span>
+                    </div>
+                    <div id="prologue-content">
+                        Os ingleses trouxeram o relógio e a civilização, mas também os seus demônios. O corpo cirurgicamente retalhado no vale lembra a 'Obra de Jack' de 1888. A vila foi isolada. O assassino está escondido na neblina, e qualquer morador pode ser o monstro. Cruze os álibis de tempo e espaço no quadro antes que a fumaça engula mais alguém.
+                    </div>
+                </div>
+                
+                <div class="tabs-header">
+                    <button class="tab-btn active" onclick="showTab('tab-cam1')">Passo 1</button>
+                    <button class="tab-btn" onclick="showTab('tab-cam2')">Passo 2</button>
+                    <button class="tab-btn" onclick="showTab('tab-cam3')">Passo 3</button>
+                    <button class="tab-btn" onclick="showTab('tab-vitima')">A Vítima</button>
+                    <button class="tab-btn" onclick="showTab('tab-assassino')">Jack</button>
+                </div>
+
+                <div class="side-panel-content">
+                    
+                    <div id="tab-cam1" class="tab-content active">
+                        <div class="sub-tabs-header">
+                            <button class="sub-tab-btn active" onclick="showSubTab(event, 'cam1-s6', 'Madame')">🍷 S6 (Madame)</button>
+                            <button class="sub-tab-btn" onclick="showSubTab(event, 'cam1-s1', 'Medico')">🩺 S1 (Médico)</button>
+                            <button class="sub-tab-btn" onclick="showSubTab(event, 'cam1-s2', 'Coveiro')">⛏️ S2 (Coveiro)</button>
+                        </div>
+                        
+                        <!-- MADAME -->
+                        <div id="cam1-s6" class="sub-tab-content active">
+                            <h4 class="char-name-title">🍷 S6 (Madame) <button class="replay-btn" onclick="playAudio('Madame_padrao')" title="Ouvir">▶️</button></h4>
+                            <p class="quote-large">"O que a polícia quer na minha porta a esta hora? Limpe seus sapatos antes de dirigir a palavra a mim, detetive. A umidade desta vila já está arruinando a minha noite."</p>
+                            
+                            <div class="options-container" id="opts-S6">
+                                <h4 class="decision-title">Qual linha de investigação seguir?</h4>
+                                <button class="choice-btn" onclick="makeChoice('S6', 'A', 'Madame')">
+                                    <span class="play-icon-small">▶️</span>
+                                    <div><strong>[Intimidação]</strong> Seu nome foi citado nas docas. O que está escondendo por trás de toda essa arrogância?</div>
+                                </button>
+                                <button class="choice-btn" onclick="makeChoice('S6', 'B', 'Madame')">
+                                    <span class="play-icon-small">▶️</span>
+                                    <div><strong>[Lábia]</strong> Perdão pela intriga. Uma dama da sua classe deve estar apavorada com os gritos lá fora.</div>
+                                </button>
+                            </div>
+
+                            <div class="selected-choice-container hidden" id="choice-res-S6">
+                                <h4 class="char-name-title" style="margin-top: 15px; color: var(--highlight);">Nova Dedução <button class="replay-btn" id="replay-S6" onclick="" title="Ouvir Resposta">▶️</button></h4>
+                                <p class="quote-large" id="text-res-S6" style="border-left-color: var(--highlight);"></p>
+                            </div>
+                        </div>
+
+                        <!-- MÉDICO -->
+                        <div id="cam1-s1" class="sub-tab-content">
+                            <h4 class="char-name-title">🩺 S1 (Médico) <button class="replay-btn" onclick="playAudio('Medico_padrao')" title="Ouvir">▶️</button></h4>
+                            <p class="quote-large">"Detetive. Se veio buscar o laudo preliminar da vítima, vai ter que esperar. A noite foi longa, a pilha de corpos na maca só aumenta e meu café já esfriou. O que você quer?"</p>
+                            
+                            <div class="options-container" id="opts-S1">
+                                <h4 class="decision-title">Qual linha de investigação seguir?</h4>
+                                <button class="choice-btn" onclick="makeChoice('S1', 'A', 'Medico')">
+                                    <span class="play-icon-small">▶️</span>
+                                    <div><strong>[Acusação]</strong> Um corte cirúrgico assim só poderia ser feito por um médico. Onde você estava?</div>
+                                </button>
+                                <button class="choice-btn" onclick="makeChoice('S1', 'B', 'Medico')">
+                                    <span class="play-icon-small">▶️</span>
+                                    <div><strong>[Lógica]</strong> O plantão foi longo. Chegou a notar algo peculiar enquanto trabalhava?</div>
+                                </button>
+                            </div>
+
+                            <div class="selected-choice-container hidden" id="choice-res-S1">
+                                <h4 class="char-name-title" style="margin-top: 15px; color: var(--highlight);">Nova Dedução <button class="replay-btn" id="replay-S1" onclick="" title="Ouvir Resposta">▶️</button></h4>
+                                <p class="quote-large" id="text-res-S1" style="border-left-color: var(--highlight);"></p>
+                            </div>
+                        </div>
+
+                        <!-- COVEIRO -->
+                        <div id="cam1-s2" class="sub-tab-content">
+                            <h4 class="char-name-title">⛏️ S2 (Coveiro) <button class="replay-btn" onclick="playAudio('Coveiro_padrao')" title="Ouvir">▶️</button></h4>
+                            <p class="quote-large">"Mais um corpo na vila, é? A polícia só lembra que eu existo quando a terra precisa engolir alguém... ou quando precisam de um bode expiatório. Diga logo o que você quer, a terra está dura hoje."</p>
+                            
+                            <div class="options-container" id="opts-S2">
+                                <h4 class="decision-title">Qual linha de investigação seguir?</h4>
+                                <button class="choice-btn" onclick="makeChoice('S2', 'A', 'Coveiro')">
+                                    <span class="play-icon-small">▶️</span>
+                                    <div><strong>[Acusação]</strong> Sua pá quebra ossos com facilidade. Você desceu para a vila buscando mais clientes?</div>
+                                </button>
+                                <button class="choice-btn" onclick="makeChoice('S2', 'B', 'Coveiro')">
+                                    <span class="play-icon-small">▶️</span>
+                                    <div><strong>[Lógica]</strong> Da Cidade Alta, a visão é privilegiada. Chegou a ouvir algo na neblina?</div>
+                                </button>
+                            </div>
+
+                            <div class="selected-choice-container hidden" id="choice-res-S2">
+                                <h4 class="char-name-title" style="margin-top: 15px; color: var(--highlight);">Nova Dedução <button class="replay-btn" id="replay-S2" onclick="" title="Ouvir Resposta">▶️</button></h4>
+                                <p class="quote-large" id="text-res-S2" style="border-left-color: var(--highlight);"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="tab-cam2" class="tab-content">
+                        <div class="sub-tabs-header">
+                            <button class="sub-tab-btn active" onclick="showSubTab(event, 'cam2-s5', 'Maestro')">🎻 S5 (Maestro)</button>
+                            <button class="sub-tab-btn" onclick="showSubTab(event, 'cam2-s3', 'Maquinista')">🚂 S3 (Maquinista)</button>
+                        </div>
+
+                        <!-- MAESTRO -->
+                        <div id="cam2-s5" class="sub-tab-content active">
+                            <h4 class="char-name-title">🎻 S5 (Maestro) <button class="replay-btn" onclick="playAudio('Maestro_padrao')" title="Ouvir">▶️</button></h4>
+                            <p class="quote-large">"Silêncio! A sua respiração ofegante está arruinando o compasso da minha sinfonia. O que a polícia quer com um gênio no meio de um processo criativo?"</p>
+                            
+                            <div class="options-container" id="opts-S5">
+                                <h4 class="decision-title">Qual linha de investigação seguir?</h4>
+                                <button class="choice-btn" onclick="makeChoice('S5', 'A', 'Maestro')">
+                                    <span class="play-icon-small">▶️</span>
+                                    <div><strong>[Acusação]</strong> Genialidade e loucura andam juntas. Um golpe de faca também tem seu compasso, não é?</div>
+                                </button>
+                                <button class="choice-btn" onclick="makeChoice('S5', 'B', 'Maestro')">
+                                    <span class="play-icon-small">▶️</span>
+                                    <div><strong>[Elogio]</strong> Sua música é admirável, Maestro. Exige um ambiente de acústica perfeita.</div>
+                                </button>
+                            </div>
+
+                            <div class="selected-choice-container hidden" id="choice-res-S5">
+                                <h4 class="char-name-title" style="margin-top: 15px; color: var(--highlight);">Nova Dedução <button class="replay-btn" id="replay-S5" onclick="" title="Ouvir Resposta">▶️</button></h4>
+                                <p class="quote-large" id="text-res-S5" style="border-left-color: var(--highlight);"></p>
+                            </div>
+                        </div>
+
+                        <!-- MAQUINISTA -->
+                        <div id="cam2-s3" class="sub-tab-content">
+                            <h4 class="char-name-title">🚂 S3 (Maquinista) <button class="replay-btn" onclick="playAudio('Maquinista_padrao')" title="Ouvir">▶️</button></h4>
+                            <p class="quote-large">"Cuidado onde pisa, detetive. Essa graxa negra dos trilhos não sai das botas nunca mais. O último trem já partiu e as fornalhas estão esfriando. O que a lei faz caminhando por aqui a essa hora?"</p>
+                            
+                            <div class="options-container" id="opts-S3">
+                                <h4 class="decision-title">Qual linha de investigação seguir?</h4>
+                                <button class="choice-btn" onclick="makeChoice('S3', 'A', 'Maquinista')">
+                                    <span class="play-icon-small">▶️</span>
+                                    <div><strong>[Acusação]</strong> Graxa e fumaça escondem o sangue. O que fazia caminhando fora do trem?</div>
+                                </button>
+                                <button class="choice-btn" onclick="makeChoice('S3', 'B', 'Maquinista')">
+                                    <span class="play-icon-small">▶️</span>
+                                    <div><strong>[Lógica]</strong> Você conduz a vila. Deve ter notado algo incomum trabalhando no pátio.</div>
+                                </button>
+                            </div>
+
+                            <div class="selected-choice-container hidden" id="choice-res-S3">
+                                <h4 class="char-name-title" style="margin-top: 15px; color: var(--highlight);">Nova Dedução <button class="replay-btn" id="replay-S3" onclick="" title="Ouvir Resposta">▶️</button></h4>
+                                <p class="quote-large" id="text-res-S3" style="border-left-color: var(--highlight);"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="tab-cam3" class="tab-content">
+                        <div class="sub-tabs-header">
+                            <button class="sub-tab-btn active" onclick="showSubTab(event, 'cam3-s7', 'Barao')">🎩 S7 (Barão)</button>
+                            <button class="sub-tab-btn" onclick="showSubTab(event, 'cam3-s4', 'Botanico')">🌿 S4 (Botânico)</button>
+                        </div>
+
+                        <!-- BARÃO -->
+                        <div id="cam3-s7" class="sub-tab-content active">
+                            <h4 class="char-name-title">🎩 S7 (Barão) <button class="replay-btn" onclick="playAudio('Barao_padrao')" title="Ouvir">▶️</button></h4>
+                            <p class="quote-large">"Quem autorizou a sua entrada na minha propriedade? O chefe de polícia janta na minha mesa todas as terças-feiras, detetive. Pense bem nas suas próximas palavras antes de desperdiçar o meu tempo."</p>
+                            
+                            <div class="options-container" id="opts-S7">
+                                <h4 class="decision-title">Qual linha de investigação seguir?</h4>
+                                <button class="choice-btn" onclick="makeChoice('S7', 'A', 'Barao')">
+                                    <span class="play-icon-small">▶️</span>
+                                    <div><strong>[Autoridade]</strong> Nenhum título vai te proteger de um enforcamento, Barão. Onde você estava?</div>
+                                </button>
+                                <button class="choice-btn" onclick="makeChoice('S7', 'B', 'Barao')">
+                                    <span class="play-icon-small">▶️</span>
+                                    <div><strong>[Subserviência]</strong> Milorde, perdoe a intriga. Da sua propriedade panorâmica, deve ter visto algo.</div>
+                                </button>
+                            </div>
+
+                            <div class="selected-choice-container hidden" id="choice-res-S7">
+                                <h4 class="char-name-title" style="margin-top: 15px; color: var(--highlight);">Nova Dedução <button class="replay-btn" id="replay-S7" onclick="" title="Ouvir Resposta">▶️</button></h4>
+                                <p class="quote-large" id="text-res-S7" style="border-left-color: var(--highlight);"></p>
+                            </div>
+                        </div>
+
+                        <!-- BOTÂNICO -->
+                        <div id="cam3-s4" class="sub-tab-content">
+                            <h4 class="char-name-title">🌿 S4 (Botânico) <button class="replay-btn" onclick="playAudio('Botanico_padrao')" title="Ouvir">▶️</button></h4>
+                            <p class="quote-large">"Detetive... g-graças a Deus você chegou! As coisas que eu ouvi naquela neblina... meu Deus do céu! Minhas pernas ainda estão tremendo, eu quase não consegui correr de volta pra luz!"</p>
+                            
+                            <div class="options-container" id="opts-S4">
+                                <h4 class="decision-title">Qual linha de investigação seguir?</h4>
+                                <button class="choice-btn" onclick="makeChoice('S4', 'A', 'Botanico')">
+                                    <span class="play-icon-small">▶️</span>
+                                    <div><strong>[Desconfiança]</strong> Suas roupas estão cheias de lama escura. Estava enterrando evidências no mato?</div>
+                                </button>
+                                <button class="choice-btn" onclick="makeChoice('S4', 'B', 'Botanico')">
+                                    <span class="play-icon-small">▶️</span>
+                                    <div><strong>[Empatia]</strong> Acalme-se, você está seguro agora. Respire fundo e me diga exatamente o que viu.</div>
+                                </button>
+                            </div>
+
+                            <div class="selected-choice-container hidden" id="choice-res-S4">
+                                <h4 class="char-name-title" style="margin-top: 15px; color: var(--highlight);">Nova Dedução <button class="replay-btn" id="replay-S4" onclick="" title="Ouvir Resposta">▶️</button></h4>
+                                <p class="quote-large" id="text-res-S4" style="border-left-color: var(--highlight);"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="tab-vitima" class="tab-content">
+                        <div class="sub-tabs-header">
+                            <button class="sub-tab-btn active" style="cursor: default;">💀 A Vítima</button>
+                        </div>
+                        
+                        <!-- DICA DE OURO: Adicionada aqui para guiar a dedução lógica do tempo! -->
+                        <div id="vitima-locked" class="locked-msg">
+                            <span class="lock-icon">🔒</span>
+                            <h3>O Cerco Final</h3>
+                            <p>A matemática lhe deixou dois pontos cegos no quadro, Detetive.<br><br><strong style="color:var(--highlight);">DICA DE OURO:</strong> A lógica do tempo dita que o sangue correu primeiro, no <strong>início da noite</strong>, e o monstro fugiu pelo último caminho que restou. Posicione a <strong>Vítima</strong> no cruzamento correto para revelar a cena do crime.</p>
+                        </div>
+
+                        <div id="vitima-unlocked" class="sub-tab-content hidden">
+                            <h4 class="char-name-title">💀 A Vítima</h4>
+                            <p class="quote-large">Sua dedução estava correta. Você afasta a neblina e encontra o corpo jogado sobre as pedras frias. O terror o paralisa por um instante: o cenário é idêntico aos relatórios macabros da Scotland Yard de 1888. Um corte limpo, cirúrgico e implacável. Mas, ao examinar a cena, seus dedos encontram uma anomalia caída perto da vítima: uma pequena engrenagem de ouro maciço. Ela é pesada, lapidada com uma precisão impossível para esta época e emite um calor inexplicável. O Maquinista mencionou passos pesados nos trilhos... Há algo de muito errado com esse 'Jack'. Você vira os olhos para o quadro e encara a única interseção que restou livre: a <strong>Trilha Baixa</strong>. Corra, Detetive! Não deixe o assassino escapar na fumaça antes que a cidade inteira acorde!</p>
+                        </div>
+                    </div>
+
+                    <div id="tab-assassino" class="tab-content">
+                        <div class="sub-tabs-header">
+                            <button class="sub-tab-btn active" style="cursor: default;">🔪 O Assassino</button>
+                        </div>
+                        <div id="assassino-locked" class="locked-msg">
+                            <span class="lock-icon">🔒</span>
+                            <h3>O Xeque-Mate</h3>
+                            <p>A rota de fuga do assassino só será mapeada no quadro após a <strong>Vítima</strong> ser encontrada e fixada corretamente.</p>
+                        </div>
+                        <div id="assassino-unlocked" class="sub-tab-content hidden">
+                            <h4 class="char-name-title">🔪 O Assassino</h4>
+                            <p class="quote-large">A matemática não mente. Com todos fixados na regra de ouro do tabuleiro, o cerco se fecha. O último espaço livre revela a rota de fuga! É lá que ele está! Você dispara pela neblina com a arma em punho descendo a escuridão da <strong>Trilha Baixa</strong> até a estação do <strong>Funicular</strong>. A figura alta, vestindo sobretudo escuro e cartola, tenta forçar as alavancas do maquinário. 'Acabou, Jack!', você grita. Ele se vira lentamente. Mas sob a cartola, não há rosto humano. Há uma placa de bronze polido, válvulas e engrenagens de ouro girando. Você não hesita e o estrondo do revólver ecoa pelo vale, estilhaçando a lente no rosto da criatura. O Estripador de Blackwood não era um homem, mas uma máquina terrível. O monstro caiu. O caso está encerrado. Parabéns, Detetive. Você venceu.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="win-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>🏆 Caso Encerrado!</h2>
+            <p>Parabéns, Detetive! Você usou a lógica investigativa de Tempo e Espaço para interceptar o Assassino no Funicular.</p>
+            <p><strong>A Linha do Tempo foi salva!</strong></p>
+            <button class="modal-btn" onclick="closeModal()">Revisar Arquivo</button>
+        </div>
+    </div>
+
+    <script>
+        let currentAudio = null;
+        let eventAudio = null; 
+        let climaxAudioPlayed = false;
+        let gatilhoAudioPlayed = false;
+
+        const choicesTexts = {
+            'S6': {
+                'A': "Insolência pura da sua parte! Acha que eu desceria ao nível daquela ralé? Sangue de rua não entra no meu casarão na Colina dos Ingleses. Quando o sino da torre bateu exatamente meia-noite, minhas trancas de ferro já estavam passadas! Se quer um culpado, vá interrogar aquele Barão inútil. Eu vi as luzes da mansão dele acenderem lá no Setor Histórico. Ele assistiu ao massacre de camarote e não moveu um dedo. Agora, saia da minha varanda!",
+                'B': "Apavorada? Por favor. Eu sou uma mulher prevenida, detetive, não uma operária histérica. Comprei este casarão na Colina dos Ingleses justamente porque as paredes grossas mantêm a escória do lado de fora. Eu estava perfeitamente segura, servindo minha segunda taça de vinho quando o relógio marcou meia-noite em ponto. Mas vá checar aquele Barão de araque. Covarde não moveu um dedo enquanto a mulher morria lá embaixo."
+            },
+            'S1': {
+                'A': "Isso é um absurdo! Se eu quisesse retalhar alguém, faria isso na minha mesa de autópsia, onde o sangue escorre pelo ralo! Eu passei a madrugada toda enfurnado no Distrito Médico. O cheiro de formol estava me sufocando, então saí para fumar um cigarro do lado de fora. Que horas? Eu lá vou saber de horas, detetive?! Com o estresse desse plantão e essa neblina maldita, eu perdi completamente a noção do tempo! Só sei que estava cercado de cadáveres de verdade, e não brincando de assassino na rua!",
+                'B': "A morte não descansa nesta vila, detetive... e pelo visto eu também não. O plantão no Distrito Médico estava tão insuportável que meu estômago embrulhou. Tive que sair para acender meu cachimbo e tentar respirar um ar que não cheirasse a defunto. Você me pergunta a hora exata? Sinceramente, com o cansaço que estou, minha mente é um borrão. Só sei que saí em algum momento da madrugada e fiquei lá no escuro. Quem quer que tenha feito isso lá fora... não é humano."
+            },
+            'S2': {
+                'A': "A corda sempre arrebenta pro lado mais fraco, não é mesmo? Acha que eu desci lá pra vila no meio dessa fumaça maldita pra retalhar alguém com a minha pá? Fique na sua, detetive! Eu passei a noite inteira isolado no meu barraco, aqui na Cidade Alta. Olhei pro relógio da estação, e desde as 23:00 eu não vi uma alma viva e não ouvi nada além do vento! A palavra de um coveiro pobre pode não valer nada pra lei de vocês, mas a morte de hoje não fui eu quem cavei!",
+                'B': "A única coisa que eu conheço é a terra dos mortos, detetive... e prefiro mil vezes a companhia deles à dos vivos. Os mortos não mentem. Eu nem desci lá pra vila hoje, fiquei o tempo todo isolado no meu canto, aqui na Cidade Alta. E olhe, desde as 23:00 não ouvi sequer o apito de um trem passar... estava um silêncio absoluto, de túmulo. Pode revistar minhas ferramentas se quiser, mas o sangue que correu hoje não manchou as minhas mãos."
+            },
+            'S5': {
+                'A': "Ah, a ignorância da polícia chega a ser cômica! Pessoas da minha classe não sujam as mãos com lâminas enferrujadas, detetive. Eu passo as madrugadas isolado no Bosque da Neblina, sempre compondo do lado de fora, bem nos arredores do Clube Lira. Apenas assim a minha arte pode alcançar a perfeição, enquanto aqueles amadores lá dentro tocam lixo para entreter bêbados. Vá incomodar os operários e me deixe em paz!",
+                'B': "Finalmente alguém com o mínimo de refinamento nesta vila! Sim, detetive, a neblina conduz as notas do meu violino de uma forma sublime. Mas eu jamais me misturaria com a plebe suando naquele salão. Eu passo as madrugadas isolado no Bosque da Neblina, compondo sob a garoa. Encontrei a acústica perfeita do lado de fora, caminhando pelos arredores do Clube Lira. O eco que rebate na madeira do prédio embala as minhas notas. Passei a noite toda imerso na minha partitura, intocado por essa barbárie."
+            },
+            'S3': {
+                'A': "Eu conduzo as locomotivas, detetive! Exigem força e graxa, sim, mas pra manter a vila nos trilhos, não pra tirar vidas. Passei a noite toda atolado de graxa no Pátio de Manobras, bem na linha da rua da Trilha, fazendo a manutenção das caldeiras. Se quer saber a hora, veio perguntar pro homem errado. Eu sou um maquinista, não carrego relógio de bolso! A neblina estava tão densa que engoliu tudo na minha frente... da distância onde eu estava, era impossível enxergar a torre do Relógio na escuridão. Só sei que eu estava perto o bastante da borda do Bosque para ouvir aquele Botânico medroso chorando e rezando na mata. Meu turno só acaba quando o carvão apaga, mas quem fez isso não entende de máquinas... entende de sangue.",
+                'B': "Visão do pátio? Naquela neblina pesada? Ela engoliu o pátio inteiro! Eu me guio pelo apito da maria-fumaça, não tenho relógio de bolso. Passei o tempo todo concentrado no Pátio de Manobras, na linha da rua da Trilha, ajustando as travas de ferro. Da posição onde eu trabalhava, a neblina estava tão grossa que tornava impossível enxergar a torre do Relógio lá longe. Por outro lado, eu estava bem rente à borda do Bosque... E foi de lá que veio algo estranho. Pouco antes do alvoroço lá embaixo, ouvi passos pesados estalando na cascalheira. Não era o Botânico, que não parava de rezar no meio das árvores. Era um vulto alto de cartola saindo da mata. Andava num ritmo firme, duro demais pra quem estava apenas passeando na escuridão."
+            },
+            'S4': {
+                'A': "Não, por favor! Eu juro pela minha vida, eu não fiz nada! Quando eu ouvi o primeiro grito cortando a noite, eu me desesperei! Eu estava coletando amostras de fungos noturnos no Bosque da Neblina. Eu me joguei no chão, me sujei de lama e rastejei como um verme até me espremer no escuro da rua da Viela! Eu olhei no meu relógio de bolso no escuro, eram exatas 23:30! Fiquei encolhido ali, só rezando pra lâmina não me achar na fumaça. Pelo amor de Deus, não me mande pra forca, eu sou um covarde, não um assassino!",
+                'B': "O-obrigado... eu... eu estava apavorado! Eu sou só um pesquisador, detetive! Estava no Bosque da Neblina estudando a flora local quando ouvi um som de corte horrível, seguido de um baque. Minhas pernas simplesmente falharam! Eu corri sem rumo, tropecei na lama e fui me esconder atrás de uns caixotes na altura da rua da Viela. A luz fraca do poste refletiu no meu relógio... marcava 23:30 em ponto! Eu me encolhi lá o resto da noite, com medo do monstro me ver! Você precisa acreditar em mim!"
+            },
+            'S7': {
+                'A': "Retire-se imediatamente da minha casa, seu detetive de meia-pataca! Como ousa ameaçar um homem da minha estirpe? Eu estava perfeitamente seguro nos meus jardins, longe dessa escória, no Setor Histórico. Minha mansão fica isolada na rua da Alameda, e eu mesmo tranquei meus portões, pontualmente às meia-noite e dez. Da minha janela eu vi a neblina engolir aquela mulherzinha lá embaixo. O sangue da ralé não mancha os meus tapetes. Agora saia, antes que eu mande tirar o seu distintivo!",
+                'B': "De fato, detetive. Pelo menos alguém nesta vila de fuligem sabe reconhecer o valor e a visão de um superior. Eu estava, como de costume, apreciando os meus jardins no Setor Histórico. A vista da minha mansão, na rua da Alameda, é irretocável. Eu olhei no meu relógio de bolso suíço, eram exatamente meia-noite e dez quando tranquei o portão de ferro e vi a fumaça cobrir a pobre coitada lá no vale. Eu não me envolvo em tragédias de classe baixa, detetive, apenas observo de longe."
+            }
+        };
+
+        function togglePrologue() {
+            const content = document.getElementById('prologue-content');
+            const icon = document.getElementById('prologue-icon');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.innerText = '▼ Minimize';
+            } else {
+                content.style.display = 'none';
+                icon.innerText = '▶ Maximize';
+            }
+        }
+
+        // Toca o áudio. Permite o canal "isEvent" que não é interrompido pela troca de tela.
+        function playAudio(filename, isEvent = false) {
+            if (isEvent) {
+                if (eventAudio) { eventAudio.pause(); eventAudio.currentTime = 0; }
+                if (filename) {
+                    eventAudio = new Audio(`audios/${filename}.mp3`);
+                    eventAudio.play().catch(e => console.log("Áudio bloqueado:", e));
+                }
+            } else {
+                if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
+                if (filename) {
+                    currentAudio = new Audio(`audios/${filename}.mp3`);
+                    currentAudio.play().catch(e => console.log("Áudio bloqueado:", e));
+                }
+            }
+        }
+
+        function makeChoice(charId, option, audioPrefix) {
+            document.getElementById(`opts-${charId}`).classList.add('hidden');
+            document.getElementById(`choice-res-${charId}`).classList.remove('hidden');
+            
+            document.getElementById(`text-res-${charId}`).innerHTML = choicesTexts[charId][option];
+            
+            const audioFile = `${audioPrefix}_${option}`;
+            document.getElementById(`replay-${charId}`).onclick = () => playAudio(audioFile);
+            
+            playAudio(audioFile);
+        }
+
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+            
+            // Pausa APENAS o diálogo das abas, deixando o eventAudio (Climax/Gatilho) continuar tocando intacto!
+            if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
+            
+            const activeSubTabBtn = document.getElementById(tabId).querySelector('.sub-tab-btn.active');
+            if (activeSubTabBtn && activeSubTabBtn.hasAttribute('onclick')) {
+                const onclickStr = activeSubTabBtn.getAttribute('onclick');
+                const matches = onclickStr.match(/'([^']+)'/g);
+                if (matches && matches.length >= 3) {
+                    const audioPrefix = matches[2].replace(/'/g, '');
+                    playAudio(audioPrefix + '_padrao');
+                }
+            }
+        }
+
+        function showSubTab(event, targetId, audioPrefix) {
+            const parentTab = event.currentTarget.closest('.tab-content');
+            parentTab.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            parentTab.querySelectorAll('.sub-tab-content').forEach(content => {
+                if(!content.classList.contains('hidden')) content.classList.remove('active');
+            });
+            document.getElementById(targetId).classList.add('active');
+            
+            playAudio(audioPrefix + '_padrao');
+        }
+
+        function closeModal() { document.getElementById('win-modal').classList.remove('show'); }
+
+        const gridMap = [
+            [{loc:'VGBND', icon:'🚃'}, {loc:'PTFRR', icon:'🛤️'}, {}, {}, {loc:'CLIR', icon:'🎭'}, {}, {}, {}, {}],
+            [{loc:'LOCO', icon:'🚂'}, {}, {}, {}, {}, {loc:'LCBR', icon:'🍻'}, {}, {loc:'CMFT', icon:'⚽'}, {}],
+            [{}, {}, {}, {loc:'FOX', icon:'🏡'}, {loc:'SLIR', icon:'🎻'}, {loc:'PDMDZ', icon:'🥖'}, {}, {loc:'RSVR', icon:'💧'}, {}],
+            [{}, {}, {}, {}, {}, {}, {}, {}, {}],
+            [{}, {loc:'RLG', icon:'⏱️'}, {}, {}, {}, {}, {}, {}, {loc:'CASTL', icon:'🏰'}],
+            [{loc:'MRCD', icon:'🥩'}, {}, {loc:'PNT2', icon:'🌉'}, {}, {}, {}, {}, {}, {loc:'RSAT', icon:'🧱'}],
+            [{}, {loc:'IGJ', icon:'⛪'}, {}, {loc:'DPLC', icon:'🏭'}, {}, {}, {}, {}, {}],
+            [{}, {}, {}, {}, {}, {}, {loc:'CSMQ', icon:'🔧'}, {}, {}],
+            [{loc:'CMTR', icon:'🪦'}, {}, {}, {}, {loc:'HSPT', icon:'🏥'}, {}, {}, {loc:'FNC', icon:'⚙️'}, {}]
+        ];
+
+        const regionMap = [
+            [1, 1, 1, 2, 2, 2, 3, 3, 3], 
+            [1, 1, 1, 2, 2, 2, 3, 3, 3], 
+            [1, 1, 1, 2, 2, 2, 3, 3, 3], 
+            [4, 4, 4, 4, 4, 9, 9, 6, 6], 
+            [4, 4, 4, 4, 9, 9, 6, 6, 6], 
+            [5, 5, 9, 9, 9, 9, 9, 6, 6], 
+            [5, 5, 9, 9, 9, 9, 9, 9, 6], 
+            [5, 5, 7, 7, 7, 9, 9, 9, 6], 
+            [5, 5, 7, 7, 7, 7, 9, 9, 9]  
+        ];
+
+        const districtNames = {
+            "2,1": "Setor\nFerroviário", 
+            "1,3": "Bosque da\nNeblina", 
+            "0,7": "Colina dos\nIngleses",
+            "3,3": "Pátio de\nManobras",
+            "6,5": "Trilha\nEscura",
+            "7,0": "Cidade\nAlta",       
+            "7,3": "Distrito\nMédico",
+            "4,6": "Setor\nHistórico"    
+        };
+
+        const characters = [
+            { id: 'S1', name: 'Médico', icon: '🩺', color: '#60a5fa' },
+            { id: 'S2', name: 'Coveiro', icon: '⛏️', color: '#4ade80' },
+            { id: 'S3', name: 'Maquinista', icon: '🚂', color: '#f97316' }, 
+            { id: 'S4', name: 'Botânico', icon: '🌿', color: '#2dd4bf' },
+            { id: 'S5', name: 'Maestro', icon: '🎻', color: '#a78bfa' },
+            { id: 'S6', name: 'Madame', icon: '🍷', color: '#f472b6' },
+            { id: 'S7', name: 'Barão', icon: '🎩', color: '#facc15' },
+            { id: 'VIT', name: 'Vítima', icon: '💀', color: '#ffffff' },
+            { id: 'ASS', name: 'Assassino', icon: '🔪', color: '#ef4444' }
+        ];
+
+        const colHeaders = ['23:00', '23:10', '23:20', '23:30', '23:40', '23:50', '00:00', '00:10', '00:20'];
+        const rowHeaders = ['C. Baixa', 'Viela', 'Beco', 'Trilha', 'Alameda', 'Pátio', 'Largo', 'Cruzmt.', 'Trilha Baixa'];
+
+        const solutionPlacements = {
+            'S5': { r: 0, c: 5 }, 'S4': { r: 1, c: 3 }, 'S6': { r: 2, c: 6 },
+            'S3': { r: 3, c: 2 }, 'S7': { r: 4, c: 7 }, 'VIT': { r: 5, c: 1 },
+            'S2': { r: 6, c: 0 }, 'S1': { r: 7, c: 4 }, 'ASS': { r: 8, c: 8 }
+        };
+
+        let selectedCharId = null;
+        let placements = {};
+
+        const boardEl = document.getElementById('game-board');
+        const charListEl = document.getElementById('character-list');
+
+        function initMenu() {
+            characters.forEach(char => {
+                const btn = document.createElement('button');
+                btn.className = 'char-btn';
+                btn.onclick = () => selectCharacter(char.id);
+                btn.id = `btn-${char.id}`;
+                
+                const dot = document.createElement('div');
+                dot.className = 'char-dot';
+                dot.style.borderColor = char.color;
+                
+                const icon = document.createElement('span');
+                icon.className = 'char-icon'; icon.innerText = char.icon;
+
+                const text = document.createElement('span');
+                text.innerText = `${char.id} (${char.name})`;
+
+                btn.appendChild(dot); btn.appendChild(icon); btn.appendChild(text);
+                charListEl.appendChild(btn);
+            });
+        }
+
+        function createHeader(text, type, index) {
+            const div = document.createElement('div');
+            div.className = 'header-cell';
+            div.id = `header-${type}-${index}`;
+            
+            if (text === '') return div; 
+            
+            const postIt = document.createElement('div');
+            postIt.className = `post-it ${type === 'col' ? 'post-it-time' : ''}`;
+            const randomRotation = (Math.random() * 4) - 2;
+            postIt.style.transform = `rotate(${randomRotation}deg)`;
+            
+            if (type === 'col') { postIt.innerHTML = `<span>⏱️</span>${text}`; } 
+            else { postIt.innerHTML = text; }
+            
+            const sketchyX = document.createElement('div');
+            sketchyX.className = 'sketchy-x hidden';
+            sketchyX.innerHTML = `
+                <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path d="M15,15 Q50,45 85,85 M85,15 Q50,55 15,85" stroke="#ef4444" stroke-width="14" stroke-linecap="round" fill="none" opacity="0.9" />
+                    <path d="M12,18 Q50,50 88,82 M82,18 Q50,48 18,82" stroke="#b91c1c" stroke-width="6" stroke-linecap="round" fill="none" />
+                </svg>
+            `;
+            
+            div.appendChild(postIt); div.appendChild(sketchyX);
+            return div;
+        }
+
+        function initBoard() {
+            boardEl.appendChild(createHeader('', 'empty', -1)); 
+            for(let c = 0; c < 9; c++) boardEl.appendChild(createHeader(colHeaders[c], 'col', c));
+
+            for(let r = 0; r < 9; r++) {
+                boardEl.appendChild(createHeader(rowHeaders[r], 'row', r));
+
+                for(let c = 0; c < 9; c++) {
+                    const cellData = gridMap[r][c];
+                    const cell = document.createElement('div');
+                    cell.className = `cell`;
+                    
+                    if (r === 0 || regionMap[r-1][c] !== regionMap[r][c]) cell.classList.add('border-t-thick');
+                    if (r === 8 || regionMap[r+1][c] !== regionMap[r][c]) cell.classList.add('border-b-thick');
+                    if (c === 0 || regionMap[r][c-1] !== regionMap[r][c]) cell.classList.add('border-l-thick');
+                    if (c === 8 || regionMap[r][c+1] !== regionMap[r][c]) cell.classList.add('border-r-thick');
+
+                    if(cellData.loc) { cell.classList.add('blocked'); cell.style.zIndex = '110'; }
+                    
+                    cell.id = `cell-${r}-${c}`;
+                    cell.onclick = () => handleCellClick(r, c);
+
+                    const key = `${r},${c}`;
+                    if(districtNames[key]) {
+                        cell.classList.add('district-center');
+                        if (key === '4,6' || key === '7,0' || key === '1,3') {
+                            cell.classList.add('shift-right');
+                        }
+                        cell.setAttribute('data-district', districtNames[key]);
+                    }
+
+                    if(cellData.loc) {
+                        const locToken = document.createElement('div');
+                        locToken.className = 'location-token';
+                        locToken.innerHTML = `<span class="loc-icon">${cellData.icon}</span><span class="loc-text">${cellData.loc}</span>`;
+                        cell.appendChild(locToken);
+                    }
+
+                    const xContainer = document.createElement('div');
+                    xContainer.className = 'x-container'; xContainer.id = `xc-${r}-${c}`;
+                    cell.appendChild(xContainer);
+
+                    const tokenContainer = document.createElement('div');
+                    tokenContainer.className = 'tc-container'; tokenContainer.id = `tc-${r}-${c}`;
+                    cell.appendChild(tokenContainer);
+
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        function selectCharacter(id) {
+            selectedCharId = id;
+            document.querySelectorAll('.char-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById(`btn-${id}`).classList.add('selected');
+        }
+
+        function handleCellClick(r, c) {
+            let occupant = null;
+            for (const [char, pos] of Object.entries(placements)) {
+                if (pos.r === r && pos.c === c) { occupant = char; break; }
+            }
+
+            if (occupant) {
+                // REGRA ATUALIZADA: Vítima e Assassino não podem remover as peças já fixadas no quadro.
+                if ((selectedCharId === 'VIT' || selectedCharId === 'ASS') && occupant !== selectedCharId) {
+                    const cell = document.getElementById(`cell-${r}-${c}`);
+                    cell.classList.remove('error-shake');
+                    void cell.offsetWidth; 
+                    cell.classList.add('error-shake');
+                    return; 
+                }
+                
+                delete placements[occupant]; 
+                renderLogic(); 
+                return;
+            }
+
+            if(gridMap[r][c].loc) return; 
+
+            if (selectedCharId) {
+                let isBlocked = false;
+                for (const [char, pos] of Object.entries(placements)) {
+                    if (pos.r === r || pos.c === c) {
+                        isBlocked = true;
+                        break;
+                    }
+                }
+                
+                // Impede QUALQUER pessoa de ser colocada em linhas já ocupadas
+                if (isBlocked) {
+                    const cell = document.getElementById(`cell-${r}-${c}`);
+                    cell.classList.remove('error-shake');
+                    void cell.offsetWidth; 
+                    cell.classList.add('error-shake');
+                    return; 
+                }
+
+                placements[selectedCharId] = { r, c }; 
+                renderLogic();
+            }
+        }
+
+        function renderLogic() {
+            for(let r=0; r<9; r++) {
+                for(let c=0; c<9; c++) {
+                    const cell = document.getElementById(`cell-${r}-${c}`);
+                    if(gridMap[r][c].loc) { cell.style.zIndex = '110'; } 
+                    else { cell.style.zIndex = '2'; }
+                    document.getElementById(`tc-${r}-${c}`).innerHTML = '';
+                    document.getElementById(`xc-${r}-${c}`).innerHTML = '';
+                }
+            }
+            
+            for(let i=0; i<9; i++) {
+                ['col', 'row'].forEach(type => {
+                    const head = document.getElementById(`header-${type}-${i}`);
+                    if(head && head.querySelector('.post-it')) {
+                        head.querySelector('.post-it').classList.remove('hidden');
+                        head.querySelector('.sketchy-x').classList.add('hidden');
+                    }
+                });
+            }
+
+            const suspectsList = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'];
+            let placedSuspectsCount = 0;
+            const occupiedRows = new Set();
+            const occupiedCols = new Set();
+
+            for (const [charId, pos] of Object.entries(placements)) {
+                occupiedRows.add(pos.r);
+                occupiedCols.add(pos.c);
+                
+                const cell = document.getElementById(`cell-${pos.r}-${pos.c}`);
+                cell.style.zIndex = '100'; 
+                
+                const charData = characters.find(c => c.id === charId);
+                const token = document.createElement('div');
+                token.className = 'character-token';
+                token.innerHTML = `<span style="font-size:22px; line-height:1;">${charData.icon}</span><span style="font-size:10px; font-weight:900; margin-top:2px;">${charId}</span>`;
+                document.getElementById(`tc-${pos.r}-${pos.c}`).appendChild(token);
+
+                const hLine = document.createElement('div');
+                hLine.className = 'long-thread-h';
+                document.getElementById(`xc-${pos.r}-${pos.c}`).appendChild(hLine);
+                
+                const vLine = document.createElement('div');
+                vLine.className = 'long-thread-v';
+                document.getElementById(`xc-${pos.r}-${pos.c}`).appendChild(vLine);
+
+                if (suspectsList.includes(charId)) placedSuspectsCount++;
+            }
+            
+            occupiedCols.forEach(c => {
+                const head = document.getElementById(`header-col-${c}`);
+                if(head) {
+                    head.querySelector('.post-it').classList.add('hidden');
+                    head.querySelector('.sketchy-x').classList.remove('hidden');
+                }
+            });
+            occupiedRows.forEach(r => {
+                const head = document.getElementById(`header-row-${r}`);
+                if(head) {
+                    head.querySelector('.post-it').classList.add('hidden');
+                    head.querySelector('.sketchy-x').classList.remove('hidden');
+                }
+            });
+            
+            const placedCount = Object.keys(placements).length;
+            const fogOpacity = placedCount * 0.10; 
+            const boardEl = document.getElementById('game-board');
+            boardEl.style.setProperty('--fog-opacity', fogOpacity);
+
+            // ==========================================
+            // ÁUDIOS DE EVENTO (Isolados)
+            // ==========================================
+            
+            if (placedSuspectsCount === 7 && !climaxAudioPlayed) {
+                playAudio('Climax', true); 
+                climaxAudioPlayed = true;
+            }
+
+            const vitimaCorrect = placements['VIT'] && placements['VIT'].r === solutionPlacements['VIT'].r && placements['VIT'].c === solutionPlacements['VIT'].c;
+            if (vitimaCorrect && !gatilhoAudioPlayed) {
+                playAudio('Gatilho', true);
+                gatilhoAudioPlayed = true;
+            }
+
+            updateProgressiveUnlocks();
+            checkWinCondition();
+        }
+
+        function updateProgressiveUnlocks() {
+            const suspects = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'];
+            let correctSuspects = 0;
+
+            suspects.forEach(s => {
+                if (placements[s] && placements[s].r === solutionPlacements[s].r && placements[s].c === solutionPlacements[s].c) {
+                    correctSuspects++;
+                }
+            });
+
+            const vitimaCorrect = placements['VIT'] && placements['VIT'].r === solutionPlacements['VIT'].r && placements['VIT'].c === solutionPlacements['VIT'].c;
+            const assassinoCorrect = placements['ASS'] && placements['ASS'].r === solutionPlacements['ASS'].r && placements['ASS'].c === solutionPlacements['ASS'].c;
+
+            const vitLocked = document.getElementById('vitima-locked');
+            const vitUnlocked = document.getElementById('vitima-unlocked');
+            
+            // Requer que a Vítima esteja no lugar para desbloquear
+            if (correctSuspects === 7 && vitimaCorrect) {
+                vitLocked.classList.add('hidden'); vitUnlocked.classList.remove('hidden'); vitUnlocked.classList.add('active'); 
+            } else {
+                vitLocked.classList.remove('hidden'); vitUnlocked.classList.add('hidden'); vitUnlocked.classList.remove('active');
+            }
+
+            const assLocked = document.getElementById('assassino-locked');
+            const assUnlocked = document.getElementById('assassino-unlocked');
+
+            // Requer que Vítima E Assassino estejam corretos para desbloquear o final
+            if (correctSuspects === 7 && vitimaCorrect && assassinoCorrect) {
+                assLocked.classList.add('hidden'); assUnlocked.classList.remove('hidden'); assUnlocked.classList.add('active');
+            } else {
+                assLocked.classList.remove('hidden'); assUnlocked.classList.add('hidden'); assUnlocked.classList.remove('active');
+            }
+        }
+
+        function checkWinCondition() {
+            let correctCount = 0;
+            if(Object.keys(placements).length !== 9) return;
+            
+            for (const [char, pos] of Object.entries(placements)) {
+                if (solutionPlacements[char] && solutionPlacements[char].r === pos.r && solutionPlacements[char].c === pos.c) {
+                    correctCount++;
+                } else { return; }
+            }
+            if (correctCount === 9) {
+                setTimeout(() => { document.getElementById('win-modal').classList.add('show'); }, 600); 
+            }
+        }
+
+        initMenu();
+        initBoard();
+    </script>
+</body>
+</html>

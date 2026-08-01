@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sombras de Paranapiacaba - Mapa Sombrio Nativo</title>
+    <title>Sombras de Paranapiacaba - HUD Final & Fog Contínua</title>
     
     <!-- Biblioteca LEAFLET.JS (Motor do Mapa Real) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -37,7 +37,6 @@
             overflow: hidden;
         }
 
-        /* O VIEWPORT QUADRADO */
         #viewport {
             position: absolute; top: 0; left: 0;
             width: 100%; aspect-ratio: 1 / 1; 
@@ -46,27 +45,23 @@
             border-bottom: 2px solid var(--iron);
         }
 
-        /* O CONTAINER DO MAPA REAL */
         #map {
             position: absolute; top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 1;
-            background: #000; /* Fundo preto para as bordas não carregadas */
+            background: #000; 
         }
 
-        /* Esconde os créditos do mapa da tela para manter a imersão de jogo */
         .leaflet-control-attribution { display: none !important; }
 
-        /* O CANVAS DA NEBLINA (Fica por cima do mapa real) */
+        /* O Canvas da Neblina. NOTA: Retirei o filter:blur() do CSS para não distorcer no Zoom */
         #fog-canvas {
             position: absolute; top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 2;
-            filter: blur(12px); /* Borracha mais esfumaçada */
             pointer-events: none; 
         }
 
-        /* O AVATAR DO JOGADOR */
         #player-marker {
             position: absolute;
             width: 20px; height: 20px; 
@@ -93,26 +88,41 @@
             box-shadow: 0 0 5px orange;
         }
 
-        /* --- CONTROLES WASD (SIMULADOR DE PASSOS GPS) --- */
-        #gps-simulator {
-            position: absolute; 
-            top: calc(100vw + 60px); 
-            left: 50%; transform: translateX(-50%);
-            display: grid; grid-template-columns: 50px 50px 50px;
-            gap: 8px; z-index: 20; 
+        /* --- ANIMAÇÃO DO ESCANEAR --- */
+        .radar-pulse {
+            position: absolute;
+            width: 10px; height: 10px;
+            background: transparent;
+            border: 2px solid rgba(76, 76, 255, 0.8);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5; pointer-events: none;
+            animation: pulse-anim 1.5s ease-out forwards;
         }
-        @media (min-width: 450px) { #gps-simulator { top: calc(450px + 60px); } }
+        @keyframes pulse-anim {
+            0% { width: 10px; height: 10px; opacity: 1; border-width: 5px; }
+            100% { width: 300px; height: 300px; opacity: 0; border-width: 1px; }
+        }
 
-        .gps-btn {
-            background: #1a1a1a; border: 1px solid var(--iron);
-            color: white; padding: 12px 0; border-radius: 8px; font-weight: bold;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        /* --- OVERLAY DA MOCHILA --- */
+        #inventory-overlay {
+            position: absolute; top: 5%; left: 5%;
+            width: 90%; height: 85%;
+            background: rgba(15, 15, 15, 0.95);
+            border: 1px solid var(--iron); border-radius: 10px;
+            z-index: 50; display: none; flex-direction: column;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+            color: white; padding: 15px;
         }
-        .gps-btn:active { background: #444; }
-        .gps-up { grid-column: 2; grid-row: 1; }
-        .gps-left { grid-column: 1; grid-row: 2; }
-        .gps-right { grid-column: 3; grid-row: 2; }
-        .gps-down { grid-column: 2; grid-row: 3; }
+        .inv-header { display: flex; justify-content: space-between; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px;}
+        .inv-close { background: red; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .inv-tabs { display: flex; gap: 5px; margin-bottom: 10px; }
+        .tab-btn { flex: 1; background: #222; color: #888; border: 1px solid #333; padding: 10px 0; cursor: pointer; }
+        .tab-btn.active { background: #333; color: white; border-color: var(--iron); }
+        .inv-content { flex: 1; background: #0a0a0a; border: 1px inset #222; padding: 10px; overflow-y: auto; }
+        
+        .item-slot { background: #1a1a1a; border: 1px solid #333; padding: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
+        .item-btn { background: var(--accent-red); color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; font-weight: bold;}
 
         /* --- HUD INFERIOR --- */
         #hud-bottom {
@@ -130,6 +140,7 @@
         }
         .orb-liquid {
             position: absolute; bottom: 0; width: 100%; height: 100%;
+            transition: height 0.2s linear;
         }
         .orb-red .orb-liquid { background: radial-gradient(circle at 50% top, var(--accent-red), #8b0000); }
         .orb-blue .orb-liquid { background: radial-gradient(circle at 50% top, var(--accent-blue), #00008b); }
@@ -141,45 +152,61 @@
         }
         .btn-main { background: #333; color: white; font-weight: bold; border-color: #888; }
         .btn-map-active { background: #8b0000 !important; color: white !important; font-weight: bold; }
+        .btn-cooldown { background: #111 !important; color: #444 !important; border-color: #333 !important; pointer-events: none; }
     </style>
 </head>
 <body>
 
 <div id="mobile-container">
+    
+    <!-- MOCHILA (Overlay) -->
+    <div id="inventory-overlay">
+        <div class="inv-header">
+            <strong>MOCHILA</strong>
+            <button class="inv-close" onclick="toggleMochila()">X</button>
+        </div>
+        <div class="inv-tabs">
+            <button class="tab-btn active">Consumíveis</button>
+            <button class="tab-btn">Chaves</button>
+            <button class="tab-btn">Diário</button>
+        </div>
+        <div class="inv-content">
+            <div class="item-slot">
+                <div>☕ Garrafa de Café <br><small>Restaura 30% Sanidade</small></div>
+                <button class="item-btn" onclick="usarItemVida()">USAR</button>
+            </div>
+            <div class="item-slot" style="opacity: 0.5;">
+                <div>📜 Selo de Sal <br><small>Vazio</small></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA PRINCIPAL DO JOGO -->
     <div id="viewport">
-        <!-- Motor do Mapa Real -->
         <div id="map"></div>
-        <!-- Canvas da Neblina por cima -->
         <canvas id="fog-canvas"></canvas>
-        <!-- Avatar sempre no centro -->
         <div id="player-marker"></div>
     </div>
 
+    <!-- PAINEL GPS -->
     <div id="gps-status-panel">
         <div style="font-weight: bold; margin-bottom: 3px;">
             <span class="status-led" id="led-gps"></span> 
             <span id="txt-gps">Buscando Satélite...</span>
         </div>
         <div style="font-size: 0.7rem; color: #888;">
-            Ande na rua ou use o WASD para injetar coordenadas.
+            (Use W, A, S, D no teclado para testar a caminhada)
         </div>
-    </div>
-
-    <!-- Simulador de Passos -->
-    <div id="gps-simulator">
-        <div class="gps-btn gps-up" id="btn-w">W</div>
-        <div class="gps-btn gps-left" id="btn-a">A</div>
-        <div class="gps-btn gps-down" id="btn-s">S</div>
-        <div class="gps-btn gps-right" id="btn-d">D</div>
     </div>
 
     <!-- HUD INFERIOR -->
     <div id="hud-bottom">
         <div class="orb orb-red"><div class="orb-liquid" id="orb-vida"></div></div>
         <div class="action-bar">
+            <button class="action-btn" onclick="toggleMochila()">MOCHILA</button>
             <button class="action-btn" id="btn-mapa" onclick="toggleMapa()">MAPA</button>
-            <button class="action-btn btn-main">ESCANEAR</button>
-            <button class="action-btn">Magia</button>
+            <button class="action-btn btn-main" onclick="usarEscanear()">ESCANEAR</button>
+            <button class="action-btn" id="btn-magia" onclick="usarMagia()">MAGIA</button>
         </div>
         <div class="orb orb-blue"><div class="orb-liquid" id="orb-mana"></div></div>
     </div>
@@ -190,18 +217,35 @@
     const canvas = document.getElementById('fog-canvas');
     const ctx = canvas.getContext('2d');
     
-    // Coordenada inicial de Fallback (São Caetano do Sul)
+    // UI Elements
+    const vidaLiquid = document.getElementById('orb-vida');
+    const manaLiquid = document.getElementById('orb-mana');
+    const btnMagia = document.getElementById('btn-magia');
+    
+    // Configurações Geográficas
     let currentLatLng = [-23.6225, -46.5546]; 
-    let initialZoom = 18; 
+    let initialZoom = 18; // Zoom de exploração
+    let mapZoomOut = 16;  // Zoom do mapa (Não afastei tanto para a rua continuar visível)
     
     let visitedPath = [];
     let isMapOpen = false;
-    let eraserRadius = 60;
+    let isInventoryOpen = false;
+    
+    // Status do Jogador
+    let sanidade = 100;
+    let energia = 100;
+    
+    // Configurações da Borracha
+    let baseEraserRadius = 45; // Raio base ajustado
+    let raioMagiaMultiplicador = 1;
+    let magiaOnCooldown = false;
 
+    // Escuta secreta do teclado para DEBUG
     const keys = { w: false, a: false, s: false, d: false };
+    window.addEventListener('keydown', (e) => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true; });
+    window.addEventListener('keyup', (e) => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false; });
 
     function inicializarJogo() {
-        // 1. INICIALIZA O MOTOR DE MAPAS LEAFLET
         map = L.map('map', {
             zoomControl: false, 
             dragging: false,       
@@ -210,18 +254,15 @@
             touchZoom: false
         }).setView(currentLatLng, initialZoom);
 
-        // O NOVO MAPA: CARTO Dark Matter (Já é escuro, rápido e não bloqueia arquivos locais)
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            attribution: '&copy; CARTO',
             maxZoom: 19
         }).addTo(map);
 
-        // 2. CONFIGURA O CANVAS DA NEBLINA
         redimensionarCanvas();
         window.addEventListener('resize', redimensionarCanvas);
         visitedPath.push([...currentLatLng]);
 
-        // 3. INICIA SISTEMAS
         iniciarGPS();
         requestAnimationFrame(gameLoop);
     }
@@ -233,18 +274,83 @@
     }
 
     // ==========================================
-    // SISTEMA DE RASTREAMENTO GPS (REAL)
+    // SISTEMAS DE INTERFACE E HABILIDADES
+    // ==========================================
+    function toggleMochila() {
+        isInventoryOpen = !isInventoryOpen;
+        document.getElementById('inventory-overlay').style.display = isInventoryOpen ? 'flex' : 'none';
+    }
+
+    function usarItemVida() {
+        sanidade += 30;
+        if(sanidade > 100) sanidade = 100;
+        alert("Você bebeu café! Sanidade restaurada.");
+    }
+
+    function usarEscanear() {
+        if (energia < 15) { alert("Energia insuficiente!"); return; }
+        energia -= 15; 
+        let pulse = document.createElement('div');
+        pulse.classList.add('radar-pulse');
+        pulse.style.left = '50%';
+        pulse.style.top = '50%';
+        document.getElementById('viewport').appendChild(pulse);
+        setTimeout(() => pulse.remove(), 1500);
+    }
+
+    function usarMagia() {
+        if (energia < 40 || magiaOnCooldown) return;
+        energia -= 40; 
+        magiaOnCooldown = true;
+        
+        btnMagia.classList.add('btn-cooldown');
+        btnMagia.innerText = "05s";
+
+        raioMagiaMultiplicador = 3; 
+        setTimeout(() => { raioMagiaMultiplicador = 1; }, 2000);
+
+        let cooldownTempo = 5;
+        let timer = setInterval(() => {
+            cooldownTempo--;
+            btnMagia.innerText = `0${cooldownTempo}s`;
+            if(cooldownTempo <= 0) {
+                clearInterval(timer);
+                magiaOnCooldown = false;
+                btnMagia.classList.remove('btn-cooldown');
+                btnMagia.innerText = "MAGIA";
+            }
+        }, 1000);
+    }
+
+    function toggleMapa() {
+        isMapOpen = !isMapOpen;
+        const btn = document.getElementById('btn-mapa');
+        
+        if (isMapOpen) {
+            btn.innerText = "VOLTAR";
+            btn.classList.add('btn-map-active');
+            map.dragging.enable();
+            map.touchZoom.enable();
+            map.setZoom(mapZoomOut); 
+            document.getElementById('player-marker').style.display = 'none';
+        } else {
+            btn.innerText = "MAPA";
+            btn.classList.remove('btn-map-active');
+            map.dragging.disable();
+            map.touchZoom.disable();
+            map.setView(currentLatLng, initialZoom); 
+            document.getElementById('player-marker').style.display = 'block';
+        }
+    }
+
+    // ==========================================
+    // SISTEMA DE GPS (REAL E SIMULADO VIA TECLADO)
     // ==========================================
     function iniciarGPS() {
         if ("geolocation" in navigator) {
             navigator.geolocation.watchPosition(atualizarPosicaoGPS, erroGPS, {
-                enableHighAccuracy: true,
-                maximumAge: 0,
-                timeout: 5000
+                enableHighAccuracy: true, maximumAge: 0, timeout: 5000
             });
-        } else {
-            document.getElementById('txt-gps').innerText = "Sem Suporte a GPS.";
-            document.getElementById('led-gps').style.background = "red";
         }
     }
 
@@ -257,36 +363,19 @@
     }
 
     function erroGPS(err) {
-        document.getElementById('txt-gps').innerText = "Usando GPS Simulado (WASD)";
+        document.getElementById('txt-gps').innerText = "Usando Teclado (WASD)";
         document.getElementById('led-gps').style.background = "yellow";
         document.getElementById('led-gps').style.boxShadow = "0 0 10px yellow";
     }
 
-    // ==========================================
-    // SISTEMA DE GPS SIMULADO (DEBUG WASD)
-    // ==========================================
-    function ligarBotao(id, key) {
-        const btn = document.getElementById(id);
-        btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; }, {passive: false});
-        btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; }, {passive: false});
-        btn.addEventListener('mousedown', () => keys[key] = true);
-        btn.addEventListener('mouseup', () => keys[key] = false);
-        btn.addEventListener('mouseleave', () => keys[key] = false);
-    }
-    ligarBotao('btn-w', 'w'); ligarBotao('btn-a', 'a'); ligarBotao('btn-s', 's'); ligarBotao('btn-d', 'd');
-    
-    window.addEventListener('keydown', (e) => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true; });
-    window.addEventListener('keyup', (e) => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false; });
-
     function simularPassos() {
         let moveu = false;
-        // 0.00001 graus de lat/lng é aprox. 1 metro (Velocidade de caminhada no debug)
         const passo = 0.000015; 
         
-        if (keys.w) { currentLatLng[0] += passo; moveu = true; } // Norte
-        if (keys.s) { currentLatLng[0] -= passo; moveu = true; } // Sul
-        if (keys.a) { currentLatLng[1] -= passo; moveu = true; } // Oeste
-        if (keys.d) { currentLatLng[1] += passo; moveu = true; } // Leste
+        if (keys.w) { currentLatLng[0] += passo; moveu = true; } 
+        if (keys.s) { currentLatLng[0] -= passo; moveu = true; } 
+        if (keys.a) { currentLatLng[1] -= passo; moveu = true; } 
+        if (keys.d) { currentLatLng[1] += passo; moveu = true; } 
 
         if (moveu) {
             document.getElementById('txt-gps').innerText = `Simulação WASD Ativa`;
@@ -296,9 +385,6 @@
         }
     }
 
-    // ==========================================
-    // MEMÓRIA DA NEBLINA (RASTRO)
-    // ==========================================
     function salvarRastro() {
         const ultimoPonto = visitedPath[visitedPath.length - 1];
         if (!ultimoPonto) {
@@ -306,61 +392,59 @@
             return;
         }
         const distMetros = map.distance(ultimoPonto, currentLatLng);
-        if (distMetros > 2) {
+        if (distMetros > 1.0) { // Salva o rastro com mais frequência para a linha ficar perfeita
             visitedPath.push([...currentLatLng]);
         }
     }
 
     // ==========================================
-    // FUNÇÃO DE MAPA GLOBAL
-    // ==========================================
-    function toggleMapa() {
-        isMapOpen = !isMapOpen;
-        const btn = document.getElementById('btn-mapa');
-        
-        if (isMapOpen) {
-            btn.innerText = "VOLTAR";
-            btn.classList.add('btn-map-active');
-            map.dragging.enable();
-            map.setZoom(15);
-        } else {
-            btn.innerText = "MAPA";
-            btn.classList.remove('btn-map-active');
-            map.dragging.disable();
-            map.setView(currentLatLng, initialZoom);
-        }
-    }
-
-    // ==========================================
-    // O MOTOR DE RENDERIZAÇÃO 
+    // O MOTOR DE RENDERIZAÇÃO E ECONOMIA
     // ==========================================
     function gameLoop() {
+        sanidade -= 0.01; 
+        energia += 0.05;  
+        if(sanidade < 0) sanidade = 0;
+        if(energia > 100) energia = 100;
+        vidaLiquid.style.height = `${sanidade}%`;
+        manaLiquid.style.height = `${energia}%`;
+
         if (!isMapOpen) {
             simularPassos();
             map.panTo(currentLatLng, {animate: false}); 
         }
 
-        // --- DESENHA A NEBLINA ---
+        // --- PINTA A TELA DE PRETO ---
         ctx.globalCompositeOperation = 'source-over';
-        ctx.fillStyle = 'rgba(20, 25, 30, 0.98)';
+        ctx.fillStyle = 'rgba(15, 18, 22, 0.98)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+        // --- NOVA LÓGICA DA BORRACHA: LINHA CONTÍNUA ---
         ctx.globalCompositeOperation = 'destination-out';
+        
+        let currentZoom = map.getZoom();
+        let scaleMultiplier = Math.pow(2, currentZoom - initialZoom);
+        let dynamicRadius = (baseEraserRadius * scaleMultiplier) * raioMagiaMultiplicador;
 
+        // Configurações do traço (Isso garante que o S não fique com falhas)
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = dynamicRadius * 2;
+        
+        // Substitui o blur do CSS: Cria a borda macia internamente na linha desenhada
+        ctx.shadowBlur = dynamicRadius * 0.8;
+        ctx.shadowColor = 'black';
+        ctx.strokeStyle = 'rgba(0,0,0,1)';
+
+        ctx.beginPath();
         for (let i = 0; i < visitedPath.length; i++) {
-            // Converte coordenada Lat/Lng do mundo real em Posição Pixel na tela
             let pontoNaTela = map.latLngToContainerPoint(visitedPath[i]);
-            
-            let eraser = ctx.createRadialGradient(pontoNaTela.x, pontoNaTela.y, 0, pontoNaTela.x, pontoNaTela.y, eraserRadius);
-            eraser.addColorStop(0, 'rgba(0, 0, 0, 1)');
-            eraser.addColorStop(0.5, 'rgba(0, 0, 0, 0.8)');
-            eraser.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-            ctx.fillStyle = eraser;
-            ctx.beginPath();
-            ctx.arc(pontoNaTela.x, pontoNaTela.y, eraserRadius, 0, Math.PI * 2);
-            ctx.fill();
+            if (i === 0) {
+                ctx.moveTo(pontoNaTela.x, pontoNaTela.y);
+            } else {
+                ctx.lineTo(pontoNaTela.x, pontoNaTela.y);
+            }
         }
+        ctx.stroke();
 
         requestAnimationFrame(gameLoop);
     }

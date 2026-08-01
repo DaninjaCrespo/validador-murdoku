@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sombras de Paranapiacaba - Teste GPS Real</title>
+    <title>Sombras de Paranapiacaba - Mapa Sombrio Nativo</title>
+    
+    <!-- Biblioteca LEAFLET.JS (Motor do Mapa Real) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <style>
         :root {
             --bg-color: #050505;
@@ -32,6 +37,7 @@
             overflow: hidden;
         }
 
+        /* O VIEWPORT QUADRADO */
         #viewport {
             position: absolute; top: 0; left: 0;
             width: 100%; aspect-ratio: 1 / 1; 
@@ -40,44 +46,46 @@
             border-bottom: 2px solid var(--iron);
         }
 
-        #grid-board {
+        /* O CONTAINER DO MAPA REAL */
+        #map {
             position: absolute; top: 0; left: 0;
-            background-image: url('mapa-fundo2.jpg');
-            background-size: 100% 100%; 
-            background-color: #000;
-            transform-origin: top left;
-            will-change: transform;
-            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            width: 100%; height: 100%;
+            z-index: 1;
+            background: #000; /* Fundo preto para as bordas não carregadas */
         }
 
+        /* Esconde os créditos do mapa da tela para manter a imersão de jogo */
+        .leaflet-control-attribution { display: none !important; }
+
+        /* O CANVAS DA NEBLINA (Fica por cima do mapa real) */
         #fog-canvas {
             position: absolute; top: 0; left: 0;
             width: 100%; height: 100%;
-            filter: blur(8px); 
+            z-index: 2;
+            filter: blur(12px); /* Borracha mais esfumaçada */
             pointer-events: none; 
         }
 
+        /* O AVATAR DO JOGADOR */
         #player-marker {
             position: absolute;
-            width: 20px; height: 20px; top: 0; left: 0;
+            width: 20px; height: 20px; 
+            top: 50%; left: 50%; 
+            transform: translate(-50%, -50%);
             background-color: var(--accent-red); 
             border: 2px solid white; border-radius: 50%;
             box-shadow: 0 0 15px rgba(255, 50, 50, 0.8);
             z-index: 10;
-            transform-origin: center;
-            will-change: transform;
-            /* Suaviza o pulo do GPS */
-            transition: transform 1s linear; 
         }
 
-        /* --- PAINEL DE STATUS GPS --- */
+        /* --- PAINEL GPS DEBUG --- */
         #gps-status-panel {
             position: absolute; 
-            top: calc(100vw + 20px); 
+            top: calc(100vw + 10px); 
             left: 50%; transform: translateX(-50%);
             width: 90%; background: #111; border: 1px solid var(--iron);
-            border-radius: 8px; padding: 15px; color: #ccc;
-            text-align: center; z-index: 20; font-size: 0.9rem;
+            border-radius: 8px; padding: 10px; color: #ccc;
+            text-align: center; z-index: 20; font-size: 0.8rem;
         }
         .status-led {
             display: inline-block; width: 10px; height: 10px;
@@ -85,16 +93,37 @@
             box-shadow: 0 0 5px orange;
         }
 
+        /* --- CONTROLES WASD (SIMULADOR DE PASSOS GPS) --- */
+        #gps-simulator {
+            position: absolute; 
+            top: calc(100vw + 60px); 
+            left: 50%; transform: translateX(-50%);
+            display: grid; grid-template-columns: 50px 50px 50px;
+            gap: 8px; z-index: 20; 
+        }
+        @media (min-width: 450px) { #gps-simulator { top: calc(450px + 60px); } }
+
+        .gps-btn {
+            background: #1a1a1a; border: 1px solid var(--iron);
+            color: white; padding: 12px 0; border-radius: 8px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .gps-btn:active { background: #444; }
+        .gps-up { grid-column: 2; grid-row: 1; }
+        .gps-left { grid-column: 1; grid-row: 2; }
+        .gps-right { grid-column: 3; grid-row: 2; }
+        .gps-down { grid-column: 2; grid-row: 3; }
+
         /* --- HUD INFERIOR --- */
         #hud-bottom {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 100px;
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 90px;
             background: linear-gradient(to top, #0a0a0c, transparent);
             display: flex; justify-content: space-between; align-items: flex-end;
             padding: 0 10px 10px 10px; z-index: 30;
         }
 
         .orb {
-            width: 70px; height: 70px; border-radius: 50%;
+            width: 60px; height: 60px; border-radius: 50%;
             border: 3px solid var(--iron);
             box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);
             position: relative; overflow: hidden; background: #111;
@@ -117,23 +146,31 @@
 <body>
 
 <div id="mobile-container">
-    
     <div id="viewport">
-        <div id="grid-board">
-            <canvas id="fog-canvas"></canvas>
-            <div id="player-marker"></div>
+        <!-- Motor do Mapa Real -->
+        <div id="map"></div>
+        <!-- Canvas da Neblina por cima -->
+        <canvas id="fog-canvas"></canvas>
+        <!-- Avatar sempre no centro -->
+        <div id="player-marker"></div>
+    </div>
+
+    <div id="gps-status-panel">
+        <div style="font-weight: bold; margin-bottom: 3px;">
+            <span class="status-led" id="led-gps"></span> 
+            <span id="txt-gps">Buscando Satélite...</span>
+        </div>
+        <div style="font-size: 0.7rem; color: #888;">
+            Ande na rua ou use o WASD para injetar coordenadas.
         </div>
     </div>
 
-    <!-- Novo painel de status do GPS -->
-    <div id="gps-status-panel">
-        <div style="margin-bottom: 5px; font-weight: bold;">
-            <span class="status-led" id="led-gps"></span> 
-            <span id="txt-gps">Aguardando Satélite...</span>
-        </div>
-        <div style="font-size: 0.75rem; color: #888;">
-            Ande fisicamente para mover o personagem.
-        </div>
+    <!-- Simulador de Passos -->
+    <div id="gps-simulator">
+        <div class="gps-btn gps-up" id="btn-w">W</div>
+        <div class="gps-btn gps-left" id="btn-a">A</div>
+        <div class="gps-btn gps-down" id="btn-s">S</div>
+        <div class="gps-btn gps-right" id="btn-d">D</div>
     </div>
 
     <!-- HUD INFERIOR -->
@@ -141,7 +178,7 @@
         <div class="orb orb-red"><div class="orb-liquid" id="orb-vida"></div></div>
         <div class="action-bar">
             <button class="action-btn" id="btn-mapa" onclick="toggleMapa()">MAPA</button>
-            <button class="action-btn btn-main" onclick="alert('Escanear! (Teste)')">ESCANEAR</button>
+            <button class="action-btn btn-main">ESCANEAR</button>
             <button class="action-btn">Magia</button>
         </div>
         <div class="orb orb-blue"><div class="orb-liquid" id="orb-mana"></div></div>
@@ -149,156 +186,186 @@
 </div>
 
 <script>
-    const GRID_SIZE = 9; 
-    const board = document.getElementById('grid-board');
-    const viewport = document.getElementById('viewport');
-    const marker = document.getElementById('player-marker');
+    let map;
     const canvas = document.getElementById('fog-canvas');
     const ctx = canvas.getContext('2d');
     
-    let vpSize = 0, cellSize = 0, mapSize = 0;
+    // Coordenada inicial de Fallback (São Caetano do Sul)
+    let currentLatLng = [-23.6225, -46.5546]; 
+    let initialZoom = 18; 
     
-    // Variáveis de Movimento do Jogo
-    let playerX = 0; 
-    let playerY = 0;
-    const markerRadius = 10; 
-    let isMapOpen = false; 
+    let visitedPath = [];
+    let isMapOpen = false;
+    let eraserRadius = 60;
 
-    // VARIÁVEIS DE GPS REAL
-    let initialLat = null;
-    let initialLon = null;
-    // Quantos pixels no mapa equivalem a 1 metro na vida real? (Ajuste para andar mais rápido ou mais devagar)
-    const PIXELS_POR_METRO = 15; 
+    const keys = { w: false, a: false, s: false, d: false };
 
-    function inicializarMapa() {
-        vpSize = viewport.clientWidth; 
-        cellSize = vpSize / 2; 
-        mapSize = cellSize * GRID_SIZE; 
+    function inicializarJogo() {
+        // 1. INICIALIZA O MOTOR DE MAPAS LEAFLET
+        map = L.map('map', {
+            zoomControl: false, 
+            dragging: false,       
+            scrollWheelZoom: false,
+            doubleClickZoom: false,
+            touchZoom: false
+        }).setView(currentLatLng, initialZoom);
 
-        board.style.width = `${mapSize}px`;
-        board.style.height = `${mapSize}px`;
-        canvas.width = mapSize;
-        canvas.height = mapSize;
+        // O NOVO MAPA: CARTO Dark Matter (Já é escuro, rápido e não bloqueia arquivos locais)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            maxZoom: 19
+        }).addTo(map);
 
-        let gradient = ctx.createRadialGradient(mapSize/2, mapSize/2, 0, mapSize/2, mapSize/2, mapSize);
-        gradient.addColorStop(0, 'rgba(65, 70, 75, 0.98)');
-        gradient.addColorStop(1, 'rgba(20, 25, 30, 0.99)');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, mapSize, mapSize);
-        ctx.globalCompositeOperation = 'destination-out';
+        // 2. CONFIGURA O CANVAS DA NEBLINA
+        redimensionarCanvas();
+        window.addEventListener('resize', redimensionarCanvas);
+        visitedPath.push([...currentLatLng]);
 
-        // Posição inicial no centro do Canvas
-        playerX = mapSize / 2;
-        playerY = mapSize / 2;
-
+        // 3. INICIA SISTEMAS
         iniciarGPS();
         requestAnimationFrame(gameLoop);
     }
 
+    function redimensionarCanvas() {
+        const vp = document.getElementById('viewport');
+        canvas.width = vp.clientWidth;
+        canvas.height = vp.clientHeight;
+    }
+
     // ==========================================
-    // SISTEMA DE RASTREAMENTO GPS REAL
+    // SISTEMA DE RASTREAMENTO GPS (REAL)
     // ==========================================
     function iniciarGPS() {
         if ("geolocation" in navigator) {
             navigator.geolocation.watchPosition(atualizarPosicaoGPS, erroGPS, {
-                enableHighAccuracy: true, // Força o uso do chip GPS do celular
+                enableHighAccuracy: true,
                 maximumAge: 0,
-                timeout: 10000
+                timeout: 5000
             });
         } else {
-            document.getElementById('txt-gps').innerText = "GPS não suportado neste navegador.";
+            document.getElementById('txt-gps').innerText = "Sem Suporte a GPS.";
             document.getElementById('led-gps').style.background = "red";
         }
     }
 
     function atualizarPosicaoGPS(posicao) {
-        const latAtual = posicao.coords.latitude;
-        const lonAtual = posicao.coords.longitude;
-        const precisao = posicao.coords.accuracy;
-
-        // Atualiza a interface
-        document.getElementById('txt-gps').innerText = `Sinal Estável | Precisão: ${Math.round(precisao)}m`;
-        document.getElementById('led-gps').style.background = "#00ff00"; // Fica verde
+        currentLatLng = [posicao.coords.latitude, posicao.coords.longitude];
+        document.getElementById('txt-gps').innerText = `Sinal Real | Precisão: ${Math.round(posicao.coords.accuracy)}m`;
+        document.getElementById('led-gps').style.background = "#00ff00"; 
         document.getElementById('led-gps').style.boxShadow = "0 0 10px #00ff00";
-
-        // Se for a primeira vez que pegamos o sinal, ancoramos essa coordenada ao centro do mapa
-        if (initialLat === null) {
-            initialLat = latAtual;
-            initialLon = lonAtual;
-            return;
-        }
-
-        // --- A MATEMÁTICA DA TERRA PARA O MAPA ---
-        // 1 Grau de Latitude = ~111.320 metros
-        const latDiff = initialLat - latAtual; // Se andou pro Norte, o Y na tela tem que subir (diminuir)
-        const lonDiff = lonAtual - initialLon; // Se andou pro Leste, o X na tela tem que aumentar
-
-        const metrosY = latDiff * 111320;
-        // A Longitude afunila perto dos polos, então multiplicamos pelo cosseno da latitude
-        const metrosX = lonDiff * (111320 * Math.cos(initialLat * (Math.PI / 180)));
-
-        // Aplica a caminhada do mundo real na nossa prancha de pixels
-        let targetX = (mapSize / 2) + (metrosX * PIXELS_POR_METRO);
-        let targetY = (mapSize / 2) + (metrosY * PIXELS_POR_METRO);
-
-        // Trava para não sair do limite do mapa estático
-        playerX = Math.max(0, Math.min(mapSize, targetX));
-        playerY = Math.max(0, Math.min(mapSize, targetY));
+        salvarRastro();
     }
 
     function erroGPS(err) {
-        document.getElementById('txt-gps').innerText = "Falha no Sinal (" + err.message + ")";
-        document.getElementById('led-gps').style.background = "red";
+        document.getElementById('txt-gps').innerText = "Usando GPS Simulado (WASD)";
+        document.getElementById('led-gps').style.background = "yellow";
+        document.getElementById('led-gps').style.boxShadow = "0 0 10px yellow";
     }
 
-    // --- FUNÇÃO DO MAPA ---
-    function toggleMapa() {
-        isMapOpen = !isMapOpen;
-        const btn = document.getElementById('btn-mapa');
-        if (isMapOpen) {
-            btn.innerText = "VOLTAR";
-            btn.classList.add('btn-map-active');
-        } else {
-            btn.innerText = "MAPA";
-            btn.classList.remove('btn-map-active');
+    // ==========================================
+    // SISTEMA DE GPS SIMULADO (DEBUG WASD)
+    // ==========================================
+    function ligarBotao(id, key) {
+        const btn = document.getElementById(id);
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; }, {passive: false});
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; }, {passive: false});
+        btn.addEventListener('mousedown', () => keys[key] = true);
+        btn.addEventListener('mouseup', () => keys[key] = false);
+        btn.addEventListener('mouseleave', () => keys[key] = false);
+    }
+    ligarBotao('btn-w', 'w'); ligarBotao('btn-a', 'a'); ligarBotao('btn-s', 's'); ligarBotao('btn-d', 'd');
+    
+    window.addEventListener('keydown', (e) => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true; });
+    window.addEventListener('keyup', (e) => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false; });
+
+    function simularPassos() {
+        let moveu = false;
+        // 0.00001 graus de lat/lng é aprox. 1 metro (Velocidade de caminhada no debug)
+        const passo = 0.000015; 
+        
+        if (keys.w) { currentLatLng[0] += passo; moveu = true; } // Norte
+        if (keys.s) { currentLatLng[0] -= passo; moveu = true; } // Sul
+        if (keys.a) { currentLatLng[1] -= passo; moveu = true; } // Oeste
+        if (keys.d) { currentLatLng[1] += passo; moveu = true; } // Leste
+
+        if (moveu) {
+            document.getElementById('txt-gps').innerText = `Simulação WASD Ativa`;
+            document.getElementById('led-gps').style.background = "yellow"; 
+            document.getElementById('led-gps').style.boxShadow = "0 0 10px yellow";
+            salvarRastro();
         }
     }
 
-    // --- MOTOR GRÁFICO (Renderiza onde o GPS te colocou) ---
+    // ==========================================
+    // MEMÓRIA DA NEBLINA (RASTRO)
+    // ==========================================
+    function salvarRastro() {
+        const ultimoPonto = visitedPath[visitedPath.length - 1];
+        if (!ultimoPonto) {
+            visitedPath.push([...currentLatLng]);
+            return;
+        }
+        const distMetros = map.distance(ultimoPonto, currentLatLng);
+        if (distMetros > 2) {
+            visitedPath.push([...currentLatLng]);
+        }
+    }
+
+    // ==========================================
+    // FUNÇÃO DE MAPA GLOBAL
+    // ==========================================
+    function toggleMapa() {
+        isMapOpen = !isMapOpen;
+        const btn = document.getElementById('btn-mapa');
+        
+        if (isMapOpen) {
+            btn.innerText = "VOLTAR";
+            btn.classList.add('btn-map-active');
+            map.dragging.enable();
+            map.setZoom(15);
+        } else {
+            btn.innerText = "MAPA";
+            btn.classList.remove('btn-map-active');
+            map.dragging.disable();
+            map.setView(currentLatLng, initialZoom);
+        }
+    }
+
+    // ==========================================
+    // O MOTOR DE RENDERIZAÇÃO 
+    // ==========================================
     function gameLoop() {
         if (!isMapOpen) {
-            // A Borracha limpando a neblina onde o seu GPS está
-            let raioDeLuz = cellSize * 0.9; 
-            let eraser = ctx.createRadialGradient(playerX, playerY, 0, playerX, playerY, raioDeLuz);
+            simularPassos();
+            map.panTo(currentLatLng, {animate: false}); 
+        }
+
+        // --- DESENHA A NEBLINA ---
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = 'rgba(20, 25, 30, 0.98)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.globalCompositeOperation = 'destination-out';
+
+        for (let i = 0; i < visitedPath.length; i++) {
+            // Converte coordenada Lat/Lng do mundo real em Posição Pixel na tela
+            let pontoNaTela = map.latLngToContainerPoint(visitedPath[i]);
+            
+            let eraser = ctx.createRadialGradient(pontoNaTela.x, pontoNaTela.y, 0, pontoNaTela.x, pontoNaTela.y, eraserRadius);
             eraser.addColorStop(0, 'rgba(0, 0, 0, 1)');
-            eraser.addColorStop(0.6, 'rgba(0, 0, 0, 0.8)');
+            eraser.addColorStop(0.5, 'rgba(0, 0, 0, 0.8)');
             eraser.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
             ctx.fillStyle = eraser;
             ctx.beginPath();
-            ctx.arc(playerX, playerY, raioDeLuz, 0, Math.PI * 2);
+            ctx.arc(pontoNaTela.x, pontoNaTela.y, eraserRadius, 0, Math.PI * 2);
             ctx.fill();
-
-            // Câmera 2x2 focada no jogador
-            let cameraX = Math.max(0, Math.min(mapSize - vpSize, playerX - (vpSize / 2)));
-            let cameraY = Math.max(0, Math.min(mapSize - vpSize, playerY - (vpSize / 2)));
-
-            board.style.transform = `translate3d(${-cameraX}px, ${-cameraY}px, 0) scale(1)`;
-            marker.style.transform = `translate3d(${playerX - markerRadius}px, ${playerY - markerRadius}px, 0) scale(1)`;
-
-        } else {
-            // MODO MAPA GLOBAL
-            let scaleFactor = vpSize / mapSize; 
-            board.style.transform = `translate3d(0px, 0px, 0) scale(${scaleFactor})`;
-            let markerScale = (1 / scaleFactor) * 0.5;
-            marker.style.transform = `translate3d(${playerX - markerRadius}px, ${playerY - markerRadius}px, 0) scale(${markerScale})`;
         }
 
         requestAnimationFrame(gameLoop);
     }
 
-    window.onload = inicializarMapa;
-    window.onresize = inicializarMapa;
+    window.onload = inicializarJogo;
 </script>
 
 </body>

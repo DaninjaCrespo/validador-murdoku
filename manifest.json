@@ -1,0 +1,9 @@
+{
+  "name": "Sombras de Paranapiacaba",
+  "short_name": "Sombras",
+  "start_url": "./RPG.html",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait"
+}
